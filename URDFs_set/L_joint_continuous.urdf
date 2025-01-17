@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot name="continuous_joint">
+  <joint name="continuous_joint" type="continuous">
+    <parent link="top_attachment"/>
+    <child link="bottom_attachment"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+</robot>

@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<robot name="Body_link_robot">
+
+  <!-- Body Link -->
+  <link name="body_link">
+
+
+  <!-- Cylinder for the main body -->
+    <visual>
+      <geometry>
+        <cylinder length="0.0375" radius="0.01125"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+
+    <collision>
+     <!-- Cylinder collision at the top -->
+      <geometry>
+        <cylinder length="0.0375" radius="0.01125"/>
+      </geometry>
+    </collision>
+
+<!-- ################################################################ -->
+
+<!-- Sphere at the top -->
+    <visual>
+      <geometry>
+        <sphere radius="0.01125"/>
+      </geometry>
+      <origin xyz="0 0 0.0175" rpy="0 0 0"/>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+
+     <collision>
+      <!-- Sphere collision at the top -->
+      <geometry>
+        <sphere radius="0.01125"/>
+      </geometry>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+    </collision>
+
+<!-- ################################################################ -->
+
+
+<!-- Sphere at the bottom -->
+    <visual>
+      <geometry>
+        <sphere radius="0.01125"/>
+      </geometry>
+      <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+
+    <collision>
+      <!-- Sphere collision at the bottom -->
+      <geometry>
+        <sphere radius="0.01125"/>
+      </geometry>
+      <origin xyz="0 0 -0.015" rpy="0 0 0"/>
+    </collision>
+
+
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+<!-- Universal Attachment Points -->
+  <link name="top_attachment"/>
+  <joint name="top_joint" type="fixed">
+    <parent link="body_link"/>
+    <child link="top_attachment"/>
+    <origin xyz="0 0 0.0175" rpy="0 0 0"/>
+  </joint>
+
+  <link name="bottom_attachment"/>
+  <joint name="bottom_joint" type="fixed">
+    <parent link="body_link"/>
+    <child link="bottom_attachment"/>
+    <origin xyz="0 0 -0.0175" rpy="0 0 0"/>
+  </joint>
+  
+</robot>
