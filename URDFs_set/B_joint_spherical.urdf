@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<robot name="spherical_joint">
-  <joint name="spherical_joint" type="floating">
-    <parent link="top_attachment"/>
-    <child link="bottom_attachment"/>
-  </joint>
-</robot>

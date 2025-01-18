@@ -1,11 +1,10 @@
-<?xml version="1.0"?>
-<robot name="Wheel_Link">
+
 
   <!-- Wheel Link -->
   <link name="wheel_link">
     <visual>
       <geometry>
-        <cylinder length="0.03" radius="0.05"/>
+        <cylinder length="0.015" radius="0.05"/>
       </geometry>
       <material name="green">
         <color rgba="0.0 1.0 0.0 1.0"/>
@@ -14,7 +13,7 @@
 
     <collision>
       <geometry>
-        <cylinder length="0.03" radius="0.05"/>
+        <cylinder length="0.015" radius="0.05"/>
       </geometry>
     </collision>
 
@@ -24,12 +23,30 @@
     </inertial>
   </link>
 
-  <!-- Universal Attachment Points -->
-  <link name="bottom_attachment"/>
+
   <joint name="wheel_back_joint" type="fixed">
     <parent link="wheel_link"/>
-    <child link="bottom_attachment"/>
-    <origin xyz="-0.03 0 0" rpy="0 0 0"/>
+    <child link="link_Helper"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
   
-</robot>
+
+  <link name="link_Helper">
+    <visual>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
+    </inertial>
+  </link>

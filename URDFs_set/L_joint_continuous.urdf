@@ -1,9 +1,37 @@
 <?xml version="1.0"?>
-<robot name="continuous_joint">
-  <joint name="continuous_joint" type="continuous">
-    <parent link="top_attachment"/>
-    <child link="bottom_attachment"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
+<robot name="B_JOINT_CONTI">
+<joint name="continuous_joint" type="continuous">
+    <parent link="body_joint_link"/>
+    <child link="auxiliar"/>
+    <origin xyz="0 0 0" rpy="1.6 0 0"/>
+    <axis xyz="0 0 1"/>
   </joint>
-</robot>
+
+  <link name="auxiliar">
+    <visual>
+      <geometry>
+        <cylinder length="0.07" radius="0.05"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
+    </inertial>
+  </link>
+
+
+
+  <joint name="fixed_joint" type="fixed">
+    <parent link="auxiliar"/>
+    <child link="limb_joint_bottom_blue_link"/>
+    <origin xyz="0 0 -0.15" rpy="0 0 0"/>
+  </joint>
+  </robot>

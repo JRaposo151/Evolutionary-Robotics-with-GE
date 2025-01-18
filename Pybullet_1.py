@@ -14,7 +14,7 @@ startPos = [0,0,1]
 
 startOrientation = p.getQuaternionFromEuler([0,0,0])
 
-roboID = p.loadURDF("/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/URDFs_set/custom_robot.urdf",startPos, startOrientation) #r2d2.urdf   planar_2R_robot.urdf
+roboID = p.loadURDF("/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/URDFs_set/corrected_robot.urdf",startPos, startOrientation) #r2d2.urdf   planar_2R_robot.urdf
 
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range (100000):

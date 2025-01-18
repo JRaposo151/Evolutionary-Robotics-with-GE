@@ -1,8 +1,33 @@
-<?xml version="1.0"?>
-<robot name="fixed_joint">
-  <joint name="fixed_joint" type="fixed">
-    <parent link="top_attachment"/>
-    <child link="bottom_attachment"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+
+<joint name="continuous_joint" type="fixed">
+    <parent link="body_joint_link"/>
+    <child link="link_square"/>
+    <origin xyz="0 0.03 0" rpy="0.06 0 0"/>
   </joint>
-</robot>
+
+<link name="link_square">
+  <visual>
+    <geometry>
+      <box size="0.07 0.07 0.07" /> <!-- Length, width, and height of the box -->
+    </geometry>
+    <material name="blue">
+      <color rgba="0.0 0.0 0.0 1.0" /> <!-- RGBA color for the link -->
+    </material>
+  </visual>
+  <collision>
+    <geometry>
+      <box size="0.07 0.07 0.07" /> <!-- Same dimensions as the visual -->
+    </geometry>
+  </collision>
+  <inertial>
+    <mass value="1.0" /> <!-- Mass of the link -->
+    <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.003" /> <!-- Moment of inertia -->
+  </inertial>
+</link>
+
+
+  <joint name="revolute_joint" type="fixed">
+    <parent link="link_square"/>
+    <child link="body_link"/>
+    <origin xyz="0 0.1 0" rpy="1.6 0 0"/>
+  </joint>
