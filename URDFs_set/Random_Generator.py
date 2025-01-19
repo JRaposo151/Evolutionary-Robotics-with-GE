@@ -98,9 +98,12 @@ def save_robot_to_file(robot, filename):
     ET.indent(tree, space="  ", level=0)
     tree.write(filename, encoding="utf-8", xml_declaration=True)
 
+def main(i):
+    robot = create_robot()
+    filename = "corrected_robot" + str(i) + ".urdf";
+    save_robot_to_file(robot, filename)
+    return filename
 
-robot = create_robot()
-save_robot_to_file(robot, "corrected_robot.urdf")
 
 
 
