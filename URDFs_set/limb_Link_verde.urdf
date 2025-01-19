@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
-<robot name="Link:small">
-<link name="limb_small_link_robot">
+<robot name="Limb_LINK">
+<!-- Limb Joint Bottom -->
+  <link name="limb_joint_bottom_blue_link">
     <visual>
       <geometry>
-        <sphere radius="0.02125"/>
+        <sphere radius="0.03125"/>
       </geometry>
-      <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
+      <material name="green">
+        <color rgba="0.0 255.0 0.0 1.0"/>
       </material>
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.02125"/>
+        <sphere radius="0.03125"/>
       </geometry>
     </collision>
     <inertial>
@@ -22,16 +23,16 @@
 
   <!-- Joint for Limb -->
   <joint name="bot_sphere_joint_limb" type="fixed">
-    <parent link="limb_small_link_robot"/>
+    <parent link="limb_joint_bottom_blue_link"/>
     <child link="limb_link"/>
-    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 0.09" rpy="0 0 0"/>
   </joint>
 
-   <!-- Limb Link -->
+  <!-- Limb Link -->
   <link name="limb_link">
     <visual>
       <geometry>
-        <cylinder length="0.10" radius="0.02125"/>
+        <cylinder length="0.1875" radius="0.03125"/>
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 1.0 1.0"/>
@@ -39,7 +40,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.1875" radius="0.02125"/>
+        <cylinder length="0.1875" radius="0.03125"/>
       </geometry>
     </collision>
     <inertial>
@@ -49,4 +50,5 @@
   </link>
 
 </robot>
+
 

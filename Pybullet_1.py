@@ -22,7 +22,7 @@ for i in range(10):
 
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range (600):
-    startPos = [0 - i, 0, 1]
+    startPos = [0, 0, 1]
     if i < 10:
         print("corrected_robot"+str(i))
         roboID = p.loadURDF("/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot"+str(i)+".urdf",startPos, startOrientation)

@@ -1,41 +1,37 @@
 <?xml version="1.0"?>
-<robot name="L_WHEEL">
-
-  <!-- Wheel Link -->
-  <link name="wheel_link">
+<robot name="BODY_LINK">
+<!-- Body Link -->
+  <link name="body_link">
     <visual>
       <geometry>
-        <cylinder length="0.015" radius="0.05"/>
+        <cylinder length="0.1875" radius="0.05625"/>
       </geometry>
-      <material name="green">
-        <color rgba="0.0 1.0 0.0 1.0"/>
+      <material name="yellow">
+        <color rgba="221.0 240.0 19.0 0.8"/>
       </material>
     </visual>
-
     <collision>
       <geometry>
-        <cylinder length="0.015" radius="0.05"/>
+        <cylinder length="0.1875" radius="0.05625"/>
       </geometry>
     </collision>
-
     <inertial>
-      <mass value="0.5"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.0005"/>
+      <mass value="5.0"/>
+      <inertia ixx="0.025" ixy="0.0" ixz="0.0" iyy="0.025" iyz="0.0" izz="0.025"/>
     </inertial>
   </link>
 
-
-  <joint name="wheel_back_joint" type="fixed">
-    <parent link="wheel_link"/>
-    <child link="link_Helper"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </joint>
   
+  <joint name="top_sphere_joint_body" type="fixed">
+    <parent link="body_link"/>
+    <child link="body_joint_link"/>
+    <origin xyz="0 0 0.0875" rpy="1.5 0 0"/>
+  </joint>
 
-  <link name="link_Helper">
+  <link name="body_joint_link">
     <visual>
       <geometry>
-        <sphere radius="0.02"/>
+        <sphere length="0.07" radius="0.02"/>
       </geometry>
       <material name="black">
         <color rgba="0.0 0.0 0.0 1.0"/>

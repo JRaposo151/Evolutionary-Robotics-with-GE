@@ -1,5 +1,7 @@
+<?xml version="1.0"?>
+<robot name="B_JOINT_fixed">
 
-<joint name="continuous_joint" type="fixed">
+<joint name="fixed_joint" type="fixed">
     <parent link="body_joint_link"/>
     <child link="link_square"/>
     <origin xyz="0 0.03 0" rpy="0.06 0 0"/>
@@ -26,8 +28,9 @@
 </link>
 
 
-  <joint name="revolute_joint" type="fixed">
+  <joint name="fixed_joint" type="fixed">
     <parent link="link_square"/>
     <child link="body_link"/>
     <origin xyz="0 0.1 0" rpy="1.6 0 0"/>
   </joint>
+</robot>

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="B_JOINT_CONTI">
+<robot name="L_JOINT_CONTI">
 <joint name="continuous_joint" type="continuous">
     <parent link="body_joint_link"/>
     <child link="auxiliar"/>

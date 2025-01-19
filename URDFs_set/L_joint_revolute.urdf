@@ -1,3 +1,6 @@
+<?xml version="1.0"?>
+<robot name="L_JOINT_REVO">
+
 <joint name="revolute_joint" type="revolute">
     <parent link="body_joint_link"/>
     <child link="auxiliar"/>
@@ -34,3 +37,4 @@
     <child link="limb_joint_bottom_blue_link"/>
     <origin xyz="0 0.2 0.005" rpy="1.6 0 0"/>
   </joint>
+</robot>
