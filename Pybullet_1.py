@@ -21,7 +21,7 @@ for i in range(10):
     filename = Random_Generator.main(i)
 
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
-for i in range (600):
+for i in range (60000):
     startPos = [0, 0, 1]
     if i < 10:
         print("corrected_robot"+str(i))

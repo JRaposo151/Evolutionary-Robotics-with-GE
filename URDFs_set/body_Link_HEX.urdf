@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<robot name="BODY_LINK">
-<!-- Body Link -->
+<robot name="BODY_LINK_HEX">
+  <!-- Body Link with Hexagon -->
   <link name="body_link">
     <visual>
       <geometry>
-        <cylinder length="0.1875" radius="0.05625"/>
+        <mesh filename="package://meshes/hexagon.stl"/>
       </geometry>
       <material name="red">
         <color rgba="1.0 0.0 0.0 1.0"/>
@@ -12,7 +12,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.1875" radius="0.05625"/>
+        <mesh filename="package://meshes/hexagon.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -21,7 +21,6 @@
     </inertial>
   </link>
 
-  
   <joint name="top_sphere_joint_body" type="fixed">
     <parent link="body_link"/>
     <child link="body_joint_link"/>
@@ -31,7 +30,7 @@
   <link name="body_joint_link">
     <visual>
       <geometry>
-        <sphere length="0.07" radius="0.02"/>
+        <sphere radius="0.02"/>
       </geometry>
       <material name="black">
         <color rgba="0.0 0.0 0.0 1.0"/>
