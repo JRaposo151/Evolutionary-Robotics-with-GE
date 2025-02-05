@@ -30,7 +30,7 @@
 
 
 
-  <joint name="revolute_joint" type="fixed">
+  <joint name="fixed_joint" type="fixed">
     <parent link="auxiliar"/>
     <child link="body_link"/>
     <origin xyz="0 0 -0.15" rpy="0 0 0"/>
