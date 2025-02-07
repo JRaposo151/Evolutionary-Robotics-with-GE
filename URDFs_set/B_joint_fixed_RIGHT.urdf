@@ -2,9 +2,9 @@
 <robot name="B_JOINT_fixed">
 
 <joint name="fixed_joint" type="fixed">
-    <parent link="body_joint_link"/>
+    <parent link=""/>
     <child link="link_square"/>
-    <origin xyz="0 0.03 0" rpy="0.06 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
 <link name="link_square">
@@ -30,7 +30,7 @@
 
   <joint name="fixed_joint" type="fixed">
     <parent link="link_square"/>
-    <child link="body_link"/>
-    <origin xyz="0 0.1 0" rpy="1.6 0 0"/>
+    <child link=""/>
+    <origin xyz="-0.07 0 0" rpy="0 0 0"/>
   </joint>
 </robot>

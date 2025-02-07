@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="L_JOINT_FIX">
+<robot name="B_JOINT_fixed">
 
 <joint name="fixed_joint" type="fixed">
     <parent link=""/>
@@ -10,7 +10,7 @@
 <link name="link_square">
   <visual>
     <geometry>
-      <box size="0.05 0.05 0.05" /> <!-- Length, width, and height of the box -->
+      <box size="0.07 0.07 0.07" /> <!-- Length, width, and height of the box -->
     </geometry>
     <material name="blue">
       <color rgba="0.0 0.0 0.0 1.0" /> <!-- RGBA color for the link -->
@@ -18,7 +18,7 @@
   </visual>
   <collision>
     <geometry>
-      <box size="0.05 0.05 0.05" /> <!-- Same dimensions as the visual -->
+      <box size="0.07 0.07 0.07" /> <!-- Same dimensions as the visual -->
     </geometry>
   </collision>
   <inertial>
@@ -31,7 +31,6 @@
   <joint name="fixed_joint" type="fixed">
     <parent link="link_square"/>
     <child link=""/>
-    <origin xyz="0 0.2 0.005" rpy="1.6 0 0"/>
+    <origin xyz="0 0 0.07" rpy="0 0 0"/>
   </joint>
-
 </robot>

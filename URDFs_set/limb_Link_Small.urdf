@@ -1,31 +1,36 @@
 <?xml version="1.0"?>
 <robot name="Link:small">
-<link name="limb_small_link_robot">
+
+
+
+<link name="aux_sphere">
     <visual>
       <geometry>
-        <sphere radius="0.02125"/>
+        <sphere radius="0.01"/>
       </geometry>
-      <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
+      <material name="black">
+        <color rgba="0 0 0 55.0"/>
       </material>
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.02125"/>
+        <sphere radius="0.02"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="2.5"/>
-      <inertia ixx="0.0125" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0125"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
     </inertial>
   </link>
 
-  <!-- Joint for Limb -->
-  <joint name="bot_sphere_joint_limb" type="fixed">
-    <parent link="limb_small_link_robot"/>
+
+
+    <joint name="fixed_joint" type="fixed">
+    <parent link="aux_sphere"/>
     <child link="limb_link"/>
-    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 0.045" rpy="0 0 0"/>
   </joint>
+
 
    <!-- Limb Link -->
   <link name="limb_link">
@@ -47,6 +52,39 @@
       <inertia ixx="0.0125" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0125"/>
     </inertial>
   </link>
+
+
+
+  <!-- Joint for Limb -->
+  <joint name="bot_sphere_joint_limb" type="fixed">
+    <parent link="limb_link"/>
+    <child link="limb_small_link_robot"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+
+
+<link name="limb_small_link_robot">
+    <visual>
+      <geometry>
+        <sphere radius="0.02125"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 1.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.02125"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.5"/>
+      <inertia ixx="0.0125" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0125"/>
+    </inertial>
+  </link>
+
+
 
 </robot>
 

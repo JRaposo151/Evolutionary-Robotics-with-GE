@@ -1,10 +1,6 @@
 <!-- Front Sphere (positive Y direction) -->
-  <joint name="front_sphere_joint" type="fixed">
-    <parent link="body_link"/>
-    <child link="front_sphere"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </joint>
-  <link name="front_sphere">
+
+  <link name="sphereAUX_sphere">
     <visual>
       <geometry>
         <sphere radius="0.02"/>
@@ -23,3 +19,4 @@
       <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
     </inertial>
   </link>
+

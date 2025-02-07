@@ -1,22 +1,39 @@
 <start>::= <expr>
 
-<expr>::= <body> | <body> <sphere_AUX_Body> <Add_B> | <body> <sphere_AUX_Body> <Add_L>
+<expr>::= <body>
+        | <body> <sphere_AUX_Body> <Add_B>
+        | <body> <sphere_AUX_Body> <Add_L>
 
 <body>::= body_Link_CUBE.urdf
 
-<sphere_AUX_Body>::= sphere_auxiliar_Link_BACK.urdf | sphere_auxiliar_Link_BOTTOM.urdf | sphere_auxiliar_Link_FRONT.urdf | sphere_auxiliar_Link_LEFT.urdf | sphere_auxiliar_Link_RIGHT.urdf | sphere_auxiliar_Link_TOP.urdf
+<sphere_AUX_Body>::=  sphere_auxiliar_Link_BACK.urdf
+                    | sphere_auxiliar_Link_BOTTOM.urdf
+                    | sphere_auxiliar_Link_FRONT.urdf
+                    | sphere_auxiliar_Link_LEFT.urdf
+                    | sphere_auxiliar_Link_RIGHT.urdf
+                    | sphere_auxiliar_Link_TOP.urdf
 
-<sphere_AUX_Links>::= | sphere_auxiliar_LIMBS.urdf
+<sphere_AUX_Links>::= sphere_auxiliar_LIMBS.urdf
 
 <Add_B>::= <JointBody> <sphere_AUX_Body> <expr>
 
 <Add_L>::= <JointLimb> <sphere_AUX_Links> <Limbs>
 
-<JointBody>::= B_joint_revolute.urdf | B_joint_continuous.urdf | B_joint_fixed.urdf
+<JointBody>::=    B_joint_revolute.urdf
+                | B_joint_continuous.urdf
+                | B_joint_fixed.urdf
 
-<JointLimb>::= L_joint_revolute.urdf | L_joint_continuous.urdf | L_joint_fixed.urdf | L_joint_revolute_horizontal.urdf
+<JointLimb>::=    L_joint_revolute.urdf
+                | L_joint_continuous.urdf
+                | L_joint_fixed.urdf
+                | L_joint_revolute_horizontal.urdf
 
-<Limbs>::= <Big_Link> | <Small_Link> | <Wheel_Link> | <Big_Link> <sphere_AUX_Links> <Add_L> | <Small_Link> <sphere_AUX_Links> <Add_L>  | <Wheel_Link> <sphere_AUX_Links> <Add_L>
+<Limbs>::=    <Big_Link>
+            | <Small_Link>
+            | <Wheel_Link>
+            | <Big_Link> <sphere_AUX_Links> <Add_L>
+            | <Small_Link> <sphere_AUX_Links> <Add_L>
+            | <Wheel_Link> <sphere_AUX_Links> <Add_L>
 
 <Big_Link>::= limb_Link.urdf
 

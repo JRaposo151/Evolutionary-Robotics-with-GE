@@ -1,15 +1,12 @@
-
 <?xml version="1.0"?>
-<robot name="B_JOINT_REVO">
+<robot name="B_JOINT_CONTI">
 
-<joint name="revolute_joint" type="revolute">
-    <parent link="body_joint_link"/>
+<joint name="continuous_joint" type="continuous">
+    <parent link="back_sphere"/>
     <child link="auxiliar"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 1.55 0"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="1.0"/>
   </joint>
-
 
   <link name="auxiliar">
     <visual>
@@ -35,7 +32,8 @@
 
   <joint name="fixed_joint" type="fixed">
     <parent link="auxiliar"/>
-    <child link="body_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <child link="body_link2"/>
+    <origin xyz="0 0 0.07" rpy="0 0 0"/>
   </joint>
+
 </robot>
