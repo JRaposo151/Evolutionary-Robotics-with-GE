@@ -1,21 +1,27 @@
 <start>::= <expr>
 
 <expr>::= <body>
-        | <body> <sphere_AUX_Body> <Add_B>
+        | <body> <sphere_AUX_Body>
         | <body> <sphere_AUX_Body> <Add_L>
 
 <body>::= body_Link_CUBE.urdf
 
-<sphere_AUX_Body>::=  sphere_auxiliar_Link_BACK.urdf
-                    | sphere_auxiliar_Link_BOTTOM.urdf
-                    | sphere_auxiliar_Link_FRONT.urdf
-                    | sphere_auxiliar_Link_LEFT.urdf
-                    | sphere_auxiliar_Link_RIGHT.urdf
-                    | sphere_auxiliar_Link_TOP.urdf
+<sphere_AUX_Body>::=  sphere_auxiliar_Link_BACK.urdf <Add_B_BACK>
+                    | sphere_auxiliar_Link_BOTTOM.urdf <Add_B_BOTTOM>
+                    | sphere_auxiliar_Link_FRONT.urdf <Add_B_FRONT>
+                    | sphere_auxiliar_Link_LEFT.urdf <Add_B_LEFT>
+                    | sphere_auxiliar_Link_RIGHT.urdf <Add_B_RIGHT>
+                    | sphere_auxiliar_Link_TOP.urdf <Add_B_TOP>
 
 <sphere_AUX_Links>::= sphere_auxiliar_LIMBS.urdf
 
-<Add_B>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_BACK>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_BOTTOM>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_FRONT>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_LEFT>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_RIGHT>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_TOP>::= <JointBody> <sphere_AUX_Body> <expr>
+
 
 <Add_L>::= <JointLimb> <sphere_AUX_Links> <Limbs>
 
