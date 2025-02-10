@@ -1,7 +1,7 @@
 <start>::= <expr>
 
 <expr>::= <body>
-        | <body> <sphere_AUX_Body>
+        | <body> <sphere_AUX_Body> <expr>
         | <body> <sphere_AUX_Body> <Add_L>
 
 <body>::= body_Link_CUBE.urdf
@@ -13,21 +13,41 @@
                     | sphere_auxiliar_Link_RIGHT.urdf <Add_B_RIGHT>
                     | sphere_auxiliar_Link_TOP.urdf <Add_B_TOP>
 
-<sphere_AUX_Links>::= sphere_auxiliar_LIMBS.urdf
 
-<Add_B_BACK>::= <JointBody> <sphere_AUX_Body> <expr>
-<Add_B_BOTTOM>::= <JointBody> <sphere_AUX_Body> <expr>
-<Add_B_FRONT>::= <JointBody> <sphere_AUX_Body> <expr>
-<Add_B_LEFT>::= <JointBody> <sphere_AUX_Body> <expr>
-<Add_B_RIGHT>::= <JointBody> <sphere_AUX_Body> <expr>
-<Add_B_TOP>::= <JointBody> <sphere_AUX_Body> <expr>
+<Add_B_BACK>::=   B_joint_revolute_BACK.urdf
+                | B_joint_continuous_BACK.urdf
+                | B_joint_fixed_BACK.urdf
 
 
-<Add_L>::= <JointLimb> <sphere_AUX_Links> <Limbs>
+<Add_B_BOTTOM>::=    B_joint_revolute_BOTTOM.urdf
+                | B_joint_continuous_BOTTOM.urdf
+                | B_joint_fixed_BOTTOM.urdf
 
-<JointBody>::=    B_joint_revolute.urdf
-                | B_joint_continuous.urdf
-                | B_joint_fixed.urdf
+
+<Add_B_FRONT>::=    B_joint_revolute_FRONT.urdf
+                | B_joint_continuous_FRONT.urdf
+                | B_joint_fixed_FRONT.urdf
+
+
+<Add_B_LEFT>::=    B_joint_revolute_LEFT.urdf
+                | B_joint_continuous_LEFT.urdf
+                | B_joint_fixed_LEFT.urdf
+
+
+<Add_B_RIGHT>::=    B_joint_revolute_RIGHT.urdf
+                | B_joint_continuous_RIGHT.urdf
+                | B_joint_fixed_RIGHT.urdf
+
+
+<Add_B_TOP>::=    B_joint_revolute_TOP.urdf
+                | B_joint_continuous_TOP.urdf
+                | B_joint_fixed_TOP.urdf
+
+
+
+
+<Add_L>::= <JointLimb> <Limbs>
+
 
 <JointLimb>::=    L_joint_revolute.urdf
                 | L_joint_continuous.urdf
@@ -37,9 +57,9 @@
 <Limbs>::=    <Big_Link>
             | <Small_Link>
             | <Wheel_Link>
-            | <Big_Link> <sphere_AUX_Links> <Add_L>
-            | <Small_Link> <sphere_AUX_Links> <Add_L>
-            | <Wheel_Link> <sphere_AUX_Links> <Add_L>
+            | <Big_Link> <Add_L>
+            | <Small_Link> <Add_L>
+            | <Wheel_Link> <Add_L>
 
 <Big_Link>::= limb_Link.urdf
 

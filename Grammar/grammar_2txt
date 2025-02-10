@@ -1,0 +1,66 @@
+<start> ::= <BodyStructure>
+
+<BodyStructure> ::= body_Link_CUBE.urdf <FaceSet>
+
+A body may have attachments on one or more faces.
+<FaceSet> ::= <>
+            | <FaceAttachment> <FaceSet>
+
+Each face attachment is defined separately so that the joint used is appropriate.
+<FaceAttachment> ::= <FaceAttachment_BACK>
+                   | <FaceAttachment_BOTTOM>
+                   | <FaceAttachment_FRONT>
+                   | <FaceAttachment_LEFT>
+                   | <FaceAttachment_RIGHT>
+                   | <FaceAttachment_TOP>
+
+For each face, first the auxiliary sphere for that face is given,
+then a choice is offered: either attach a new body or attach a limb.
+<FaceAttachment_BACK> ::= sphere_auxiliar_Link_BACK.urdf <AttachmentChoice_BACK>
+<FaceAttachment_BOTTOM> ::= sphere_auxiliar_Link_BOTTOM.urdf <AttachmentChoice_BOTTOM>
+<FaceAttachment_FRONT> ::= sphere_auxiliar_Link_FRONT.urdf <AttachmentChoice_FRONT>
+<FaceAttachment_LEFT> ::= sphere_auxiliar_Link_LEFT.urdf <AttachmentChoice_LEFT>
+<FaceAttachment_RIGHT> ::= sphere_auxiliar_Link_RIGHT.urdf <AttachmentChoice_RIGHT>
+<FaceAttachment_TOP> ::= sphere_auxiliar_Link_TOP.urdf <AttachmentChoice_TOP>
+
+For each face, the attachment choice is between a body attachment (using the appropriate joint)
+or a limb attachment (using a limb joint).
+<AttachmentChoice_BACK> ::= <B_Joint_BACK> <BodyStructure>
+                           | <L_Joint> <LimbChain>
+<AttachmentChoice_BOTTOM> ::= <B_Joint_BOTTOM> <BodyStructure>
+                             | <L_Joint> <LimbChain>
+<AttachmentChoice_FRONT> ::= <B_Joint_FRONT> <BodyStructure>
+                            | <L_Joint> <LimbChain>
+<AttachmentChoice_LEFT> ::= <B_Joint_LEFT> <BodyStructure>
+                           | <L_Joint> <LimbChain>
+<AttachmentChoice_RIGHT> ::= <B_Joint_RIGHT> <BodyStructure>
+                            | <L_Joint> <LimbChain>
+<AttachmentChoice_TOP> ::= <B_Joint_TOP> <BodyStructure>
+                          | <L_Joint> <LimbChain>
+
+Body joints for each face (choose one)
+<B_Joint_BACK> ::= B_joint_revolute_BACK.urdf | B_joint_continuous_BACK.urdf | B_joint_fixed_BACK.urdf
+<B_Joint_BOTTOM> ::= B_joint_revolute_BOTTOM.urdf | B_joint_continuous_BOTTOM.urdf | B_joint_fixed_BOTTOM.urdf
+<B_Joint_FRONT> ::= B_joint_revolute_FRONT.urdf | B_joint_continuous_FRONT.urdf | B_joint_fixed_FRONT.urdf
+<B_Joint_LEFT> ::= B_joint_revolute_LEFT.urdf | B_joint_continuous_LEFT.urdf | B_joint_fixed_LEFT.urdf
+<B_Joint_RIGHT> ::= B_joint_revolute_RIGHT.urdf | B_joint_continuous_RIGHT.urdf | B_joint_fixed_RIGHT.urdf
+<B_Joint_TOP> ::= B_joint_revolute_TOP.urdf | B_joint_continuous_TOP.urdf | B_joint_fixed_TOP.urdf
+
+Limb joints (for attaching limbs to a face or extending a limb)
+<L_Joint> ::= L_joint_revolute.urdf 
+            | L_joint_continuous.urdf 
+            | L_joint_fixed.urdf 
+            | L_joint_revolute_horizontal.urdf
+
+A limb chain is built from a limb element, with optional extensions.
+<LimbChain> ::= <Limb> <LimbExtension>
+<LimbExtension> ::= <> 
+                  | <L_Joint> <LimbChain>
+
+Limbs: choose one of the types.
+<Limb> ::= <Big_Link> 
+         | <Small_Link> 
+         | <Wheel_Link>
+<Big_Link> ::= limb_Link.urdf
+<Small_Link> ::= limb_Link_Small.urdf
+<Wheel_Link> ::= wheel_link.urdf
