@@ -1,0 +1,25 @@
+<start> ::= <BodyStructure>
+
+<BodyStructure> ::= body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>
+
+A body may have attachments on one or more faces.
+<FaceSet> ::= ε
+            | <L_Joint> <Limb> <FaceSet>
+            | <B_Joint> <BodyStructure>
+
+
+Body joints for each face (choose one)
+<B_Joint> ::= B_joint_revolute.urdf | B_joint_continuous.urdf | B_joint_fixed.urdf
+
+
+Limb joints (for attaching limbs to a face or extending a limb)
+<L_Joint> ::= L_joint_revolute.urdf
+            | L_joint_continuous.urdf
+            | L_joint_fixed.urdf
+            | L_joint_revolute_horizontal.urdf
+
+
+Limbs: choose one of the types.
+<Limb> ::= limb_Link.urdf
+         | limb_Link_Small.urdf
+         | wheel_link.urdf

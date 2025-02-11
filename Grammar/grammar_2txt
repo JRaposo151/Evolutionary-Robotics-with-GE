@@ -1,4 +1,6 @@
-<start> ::= <BodyStructure>
+<start> ::= <expr>
+
+<expr> ::= <BodyStructure>
 
 <BodyStructure> ::= body_Link_CUBE.urdf <FaceSet>
 
