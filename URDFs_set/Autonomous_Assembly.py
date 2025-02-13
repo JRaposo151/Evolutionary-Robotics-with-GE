@@ -5,28 +5,34 @@ from random import randrange
 def modify_robot(input_file_body, input_file_limbs, input_file_limbs_joints, output_file):
     robot = ET.Element("robot", name="combined_robot")
 
-    aux = randrange(0, 2)
-    print(aux)
-    tree = ET.parse(input_file_body[aux])
-    root = tree.getroot()
 
+    i = 0
+    cube_name = ""
+
+
+    tree = ET.parse(input_file_body[0])
+    root = tree.getroot()
     for child in root:
+        print("Nome do link do corpo: ", child.attrib["name"])
+        child.attrib["name"] = "body_link_"+str(i)
+        cube_name = child.attrib["name"]
+        print("Nome do link do corpo: ", child.attrib["name"])
         robot.append(child)
+
 
 
     ## AQUI COMEÇA O LIMBS JOINTS
-    aux = randrange(0, 3)
-    print(aux)
-    tree = ET.parse(input_file_limbs_joints[aux])
+    tree = ET.parse(input_file_limbs_joints[0])
     root = tree.getroot()
 
     for child in root:
+        print("Nome do link do corpo: ", child.attrib["name"])
+        child.attrib["name"] = cube_name+str(i)
+        print("Nome do link do corpo: ", child.attrib["name"])
         robot.append(child)
 
     ## AQUI COMEÇA O LIMBS
-    aux = randrange(0, 6)
-    print(aux)
-    tree = ET.parse(input_file_limbs[aux])
+    tree = ET.parse(input_file_limbs[0])
     root = tree.getroot()
 
     for child in root:
@@ -44,10 +50,14 @@ def modify_robot(input_file_body, input_file_limbs, input_file_limbs_joints, out
 def main(i):
 
 
-    input_file_body= ["URDFs_set/body_Link.urdf", "URDFs_set/body_Link_amarelo.urdf", "URDFs_set/body_Link_verde.urdf"]
-    input_file_limbs= ["URDFs_set/limb_Link.urdf", "URDFs_set/limb_Link_amarelo.urdf","URDFs_set/limb_Link_preto.urdf", "URDFs_set/limb_Link_verde.urdf", "URDFs_set/limb_Link_vermelho.urdf", "URDFs_set/limb_Link_rosa.urdf"]
-    input_file_limbs_joints= ["URDFs_set/L_joint_continuous.urdf", "URDFs_set/L_joint_fixed.urdf", "URDFs_set/L_joint_revolute.urdf"]
+    input_file_body= ["body_Link_CUBE.urdf"]
+    input_file_limbs= ["limb_Link.urdf"]
+    input_file_limbs_joints= ["B_joint_fixed_BACK.urdf"]
 
     output_file = f"corrected_robot{i}.urdf"  # Modified URDF for each iteration
     modify_robot(input_file_body, input_file_limbs, input_file_limbs_joints, output_file)
     return output_file
+
+
+if __name__ == "__main__":
+    file = main(1)
