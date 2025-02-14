@@ -28,8 +28,8 @@
 </link>
 
 
-  <joint name="fixed_joint" type="fixed">
-    <parent link="link_square"/>
+  <joint name="fixed_joint_" type="fixed">
+    <parent link=""/>
     <child link=""/>
     <origin xyz="0 0.2 0.005" rpy="1.6 0 0"/>
   </joint>

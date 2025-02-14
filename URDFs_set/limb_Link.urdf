@@ -2,7 +2,7 @@
 <robot name="Limb_LINK">
 
 
-<link name="aux_sphere">
+<link name="">
     <visual>
       <geometry>
         <sphere radius="0.02"/>
@@ -24,7 +24,7 @@
 
 
 
-    <joint name="fixed_joint" type="fixed">
+    <joint name="fixed_joint_" type="fixed">
     <parent link="aux_sphere"/>
     <child link="limb_link"/>
     <origin xyz="0 0 0.09" rpy="0 0 0"/>
