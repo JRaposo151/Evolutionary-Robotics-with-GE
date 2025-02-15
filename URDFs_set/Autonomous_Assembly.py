@@ -135,7 +135,7 @@ def main(i):
     input_file_body= ["body_Link_CUBE.urdf"]
     input_file_sphereAUX = ["sphere_auxiliar_Link_BACK.urdf"]
     input_file_limbs= ["limb_Link.urdf"]
-    input_file_limbs_joints= ["L_joint_fixed.urdf"]
+    input_file_limbs_joints= ["B_joint_fixed_BACK.urdf"]
 
     output_file = f"corrected_robot{i}.urdf"  # Modified URDF for each iteration
     modify_robot(input_file_body, input_file_sphereAUX, input_file_limbs, input_file_limbs_joints, output_file)
