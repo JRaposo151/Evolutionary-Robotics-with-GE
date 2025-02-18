@@ -1,0 +1,45 @@
+<start> ::= <BodyStructure>
+
+---> Each face represents one side of the cube. Only 5 here because one can be seen as the face/head of the robot
+
+<BodyStructure> ::= body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>
+
+---> Each face set can be empty or be directed for a new extension: a new body link or new limbs
+
+<FaceSet> ::= ε
+            | <Extension>
+
+<Extension> ::= <BodyExtension>
+               | <LimbChain>
+
+---> This rules will have the objective to increase the body strucutre
+
+<BodyExtension> ::= <B_Joint> <BodyStructure>
+
+---> This rules and the next two will have the objective to add limbs and increase the total size of each one
+
+<LimbChain> ::= <LimbAttachment> <LimbExtension>
+
+
+<LimbAttachment> ::= <L_Joint> <Limb>
+
+
+<LimbExtension> ::= ε
+                  | <L_Joint> <Limb> <LimbExtension>
+
+
+Body joints for each face (choose one)
+<B_Joint> ::= B_joint_revolute.urdf | B_joint_continuous.urdf | B_joint_fixed.urdf
+
+
+Limb joints (for attaching limbs to a face or extending a limb)
+<L_Joint> ::= L_joint_revolute.urdf
+            | L_joint_continuous.urdf
+            | L_joint_fixed.urdf
+            | L_joint_revolute_horizontal.urdf
+
+
+Limbs: choose one of the types.
+<Limb> ::= limb_Link.urdf
+         | limb_Link_Small.urdf
+         | wheel_link.urdf

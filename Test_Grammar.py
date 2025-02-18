@@ -7,28 +7,52 @@ random.seed(90)
 # are lists of possible productions (each production is a string of tokens).
 grammar = {
     "<start>": ["<BodyStructure>"],
-    "<BodyStructure>": ["body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
-    # Each FaceSet corresponds to one face of the cube.
-    # It can be empty (no attachment), or attach a limb or a new body.
+    # A body is a cube with five face attachment slots.
+    "<BodyStructure>": ["body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
+
+    # Each FaceSet corresponds to one face of the cube. It may be empty or contain an extension.
     "<FaceSet>": [
-        "",
-        "<L_Joint> <Limb> <FaceSet>",
-        "<B_Joint> <BodyStructure>"
+        " ",
+        "<Extension>"
     ],
-    # Body joints: choose one for attaching a new body.
+
+    # An extension can either attach a new body or add a limb chain.
+    "<Extension>": [
+        "<BodyExtension>",
+        "<LimbChain>"
+    ],
+
+    # A body attachment uses a body joint and then adds a new body.
+    "<BodyExtension>": ["<B_Joint> <BodyStructure>"],
+
+    # A limb chain consists of an initial limb attachment followed by an optional extension.
+    "<LimbChain>": ["<LimbAttachment> <LimbExtension>"],
+
+    # A limb attachment is a limb joint followed by a limb component.
+    "<LimbAttachment>": ["<L_Joint> <Limb>"],
+
+    # A limb extension may be empty or recursively add another limb joint and limb.
+    "<LimbExtension>": [
+        " ",
+        "<L_Joint> <Limb> <LimbExtension>"
+    ],
+
+    # Body joints for attaching a new body.
     "<B_Joint>": [
         "B_joint_revolute.urdf",
         "B_joint_continuous.urdf",
         "B_joint_fixed.urdf"
     ],
-    # Limb joints: choose one for attaching a limb.
+
+    # Limb joints for attaching limbs or extending a limb chain.
     "<L_Joint>": [
         "L_joint_revolute.urdf",
         "L_joint_continuous.urdf",
         "L_joint_fixed.urdf",
         "L_joint_revolute_horizontal.urdf"
     ],
-    # Limbs: choose one of the available limb types.
+
+    # Limb elements: choose one of the available limb types.
     "<Limb>": [
         "limb_Link.urdf",
         "limb_Link_Small.urdf",
@@ -37,7 +61,7 @@ grammar = {
 }
 
 
-MAX_DEPTH = 5
+MAX_DEPTH = 8
 
 def expand(symbol, depth):
     """
@@ -48,6 +72,7 @@ def expand(symbol, depth):
     :return: The expanded string.
     """
     indent = "  " * depth # For printing indentation based on recursion depth
+    facesetCounter = 0
 
     # If symbol is terminal (does not start with "<"), return it.
     if not symbol.startswith("<") or symbol not in grammar:
@@ -57,12 +82,21 @@ def expand(symbol, depth):
     # If we have reached max depth and the symbol is any of the non-terminal, force terminal production.
     if depth >= MAX_DEPTH and (symbol.startswith("<")):
         production = symbol
-        print(f"{indent}Depth {depth} reached for {symbol}, forcing production: {production}")
+        if symbol.startswith("<FaceSet>"):
+            facesetCounter +=1
+            print(f"{indent}Depth {depth} reached for {symbol}_{facesetCounter}, forcing production: {production}")
+        else:
+            print(f"{indent}Depth {depth} reached for {symbol}, forcing production: {production}")
         return production
     else:
         options = grammar[symbol]
         production = random.choice(options)
-        print(f"{indent}Expanding {symbol} at depth {depth} -> Chosen production: {production}")
+        if production.startswith(" ") and symbol.startswith("<FaceSet>"):
+            print(f"{indent}Expanding {symbol}_{facesetCounter} at depth {depth} -> Chosen production: NONE")
+        elif symbol.startswith("<FaceSet>"):
+            print(f"{indent}Expanding {symbol}_{facesetCounter} at depth {depth} -> Chosen production:  {production}")
+        else:
+            print(f"{indent}Expanding {symbol} at depth {depth} -> Chosen production: {production}")
 
     # Split the production into tokens.
     tokens = production.split()
