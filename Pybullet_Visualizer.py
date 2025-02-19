@@ -3,7 +3,7 @@ import time
 import pybullet_data
 import os
 
-from URDFs_set import Random_Generator
+from URDFs_set import Autonomous_Assembly
 
 physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 
@@ -18,7 +18,7 @@ startOrientation = p.getQuaternionFromEuler([0,0,0])
 
 
 for i in range(10):
-    filename = Random_Generator.main(i)
+    filename = Autonomous_Assembly.main(i)
 
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range (60000):
