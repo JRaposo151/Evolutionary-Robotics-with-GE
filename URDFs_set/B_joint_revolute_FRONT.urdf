@@ -2,7 +2,7 @@
 <?xml version="1.0"?>
 <robot name="B_JOINT_REVO">
 
-<joint name="revolute_joint" type="revolute">
+<joint name="joint_1" type="revolute">
     <parent link=""/>
     <child link="auxiliar"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -33,7 +33,7 @@
 
 
 
-  <joint name="fixed_joint" type="fixed">
+  <joint name="joint_2" type="fixed">
     <parent link="auxiliar"/>
     <child link="bottom_sphere"/>
     <origin xyz="0 0.05 0" rpy="0 0 0"/>
@@ -59,7 +59,7 @@
     </inertial>
   </link>
 
-  <joint name="cube2_connection_joint" type="fixed">
+  <joint name="joint_3" type="fixed">
     <parent link="bottom_sphere"/>
     <child link=""/>
     <!-- Adjust the origin so that Cube2 is offset relative to its left sphere -->

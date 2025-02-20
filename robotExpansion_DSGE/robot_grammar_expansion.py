@@ -101,6 +101,3 @@ def generate_robot():
     final_output = expand("<start>", 0)
     return final_output
 
-if __name__ == "__main__":
-    robot_urdf = generate_robot()
-    print("BEGINNING:::> " + robot_urdf + " <:::END")

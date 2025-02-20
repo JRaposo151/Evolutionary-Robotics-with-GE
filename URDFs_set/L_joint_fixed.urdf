@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="L_JOINT_FIX">
 
-<joint name="fixed_joint" type="fixed">
+<joint name="joint_1" type="fixed">
     <parent link=""/>
     <child link="link_square"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -28,7 +28,7 @@
 </link>
 
 
-  <joint name="fixed_joint_" type="fixed">
+  <joint name="joint_1" type="fixed">
     <parent link=""/>
     <child link=""/>
     <origin xyz="0 0.2 0.005" rpy="1.6 0 0"/>

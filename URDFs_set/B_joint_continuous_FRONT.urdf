@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="B_JOINT_CONTI">
 
-<joint name="continuous_joint" type="continuous">
+<joint name="joint_1" type="continuous">
     <parent link="back_sphere"/>
     <child link="auxiliar"/>
     <origin xyz="0 0 0" rpy="1.55 0 0"/>
@@ -30,7 +30,7 @@
 
 
 
-  <joint name="fixed_joint" type="fixed">
+  <joint name="joint_2" type="fixed">
     <parent link="auxiliar"/>
     <child link="body_link2"/>
     <origin xyz="0 0 -0.07" rpy="0 0 0"/>
