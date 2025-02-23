@@ -29,7 +29,7 @@
     </inertial>
   </link>
 
-   <joint name="joint_12" type="fixed">
+   <joint name="joint_2" type="fixed">
     <parent link="auxiliar"/>
     <child link=""/>
     <origin xyz="0 0 -0.04" rpy="0 0 0"/>

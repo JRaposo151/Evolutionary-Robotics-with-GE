@@ -106,6 +106,7 @@ def expand(symbol, depth, facesetCounter):
         # Starting a new non-terminal symbol.
         if token == "<FaceSet>":
             facesetCounter += 1
+            result_tokens.append("FaceSet:")
         print(f"{indent}Expanding new non-terminal: {token}!")
         result_tokens.append(expand(token, depth + 1, facesetCounter))
 

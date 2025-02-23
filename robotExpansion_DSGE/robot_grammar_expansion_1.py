@@ -87,6 +87,8 @@ def expand(symbol, depth):
     result_tokens = []
 
     for token in tokens:
+        if token == "<FaceSet>":
+            result_tokens.append("FaceSet:")
         # Starting a new non-terminal symbol.
         result_tokens.append(expand(token, depth + 1))
 

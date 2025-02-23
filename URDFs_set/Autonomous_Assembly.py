@@ -2,129 +2,171 @@ import xml.etree.ElementTree as ET
 from random import randrange
 
 
-def modify_robot(input_file_body, input_file_sphereAUX, input_file_limbs, input_file_limbs_joints, output_file):
-    robot = ET.Element("robot", name="combined_robot")
+class SphereCounter:
+    def __init__(self):
+        self.sphere_N = 0  # Initial counter
 
-    body_N = 0
-    cube_name = ""
-
-    sphere_N = 0
-    sphere_name = "back_sphere_" + str(sphere_N)
-
-    BlackSphere_N = 0
-    limbs_BlackSphere_name = "blackSphere_" + str(BlackSphere_N)
-
-    limbs_N = 0
-    limb = "limb_" + str(limbs_N)
-
-    limbs_joints_N = 0
-    limbs_joints_name = "link_square_" + str(limbs_joints_N)
-    
+    @property
+    def sphere_name(self):
+        return f"backSphere_{self.sphere_N}"  # Automatically updates
 
 
-    tree = ET.parse(input_file_body[0])
+class BodyCounter:
+    def __init__(self):
+        self.body_N = 0  # Initial counter
+
+    @property
+    def body_name(self):
+        return f"body_link_{self.body_N}"  # Automatically updates
+
+
+class Limb_BlackSphereCounter:
+    def __init__(self):
+        self.blackSphere_N = 0  # Initial counter
+
+    @property
+    def blackSphere_name(self):
+        return f"blackSphere_{self.blackSphere_N}"  # Automatically updates
+
+
+class Representative_JointCounter:
+    def __init__(self):
+        self.representativeJoints_N = 0  # Initial counter
+
+    @property
+    def representativeJoint_name(self):
+        return f"representativeJoint_{self.representativeJoints_N}"  # Automatically updates
+
+
+class Limbs_Counter:
+    def __init__(self):
+        self.Limbs_N = 0  # Initial counter
+
+    @property
+    def limb_name(self):
+        return f"Limb_{self.Limbs_N}"  # Automatically updates
+
+#TODO CONSTRUIR MAIS TARDE AQUI O FACTOR RANDOM PARA ESCOLHA E AINDA CONDIÇÔES PARA SEGUIR O BACK; FRONT; ETC
+def treeFunction(file):
+    tree = ET.parse(file[0])
     root = tree.getroot()
-    print("######### Features do CORPO a ser construido #########")
+    return root
+
+
+def body(robot, cube_name, root):
     for child in root:
         if child.tag == "link":
             print("Nome do link do corpo antes : ", child.attrib["name"])
-            child.attrib["name"] = "body_link_"+str(body_N)
-            body_N += 1
-            cube_name = child.attrib["name"]
+            child.attrib["name"] = cube_name.body_name
             print("Nome do link do corpo depois : ", child.attrib["name"])
-
-        elif child.tag == "joint":
-            for sub_child in child:
-                if sub_child.tag == "child":
-                    sub_child.attrib["link"] = sphere_name
         robot.append(child)
+    return robot
 
-
-    ## AQUI COMEÇA A SPHERE AUXILIAR
-    tree = ET.parse(input_file_sphereAUX[0])
-    root = tree.getroot()
-    print("######### Features da ESFERA AUXILIAR a ser construido #########")
-
-
+def AuxiliarSphere(robot, cube_name, sphere, root):
     for child in root:
-        for sub_child in child:
-            if sub_child.tag == "parent":
-                print("Nome do link do corpo pai antes: ", sub_child.attrib["link"])
-                sub_child.attrib["link"] = cube_name
-                print("Nome do link do corpo pai depois: ", sub_child.attrib["link"])
-            elif sub_child.tag == "child":
-                print("Nome do link do corpo filho antes: ", sub_child.attrib["link"])
-                sub_child.attrib["link"] = sphere_name
-                print("Nome do link do corpo filho depois: ", sub_child.attrib["link"])
+
         if child.tag == "link":
             print("Nome do link da esfera auxiliar antes: ", child.attrib["name"])
-            child.attrib["name"] = sphere_name
+            child.attrib["name"] = sphere.sphere_name
             print("Nome do link da esfera auxiliar depois: ", child.attrib["name"])
-            sphere_N += 1
+        else:
+            for sub_child in child:
+                if sub_child.tag == "parent":
+                    print("Nome do link do corpo pai antes: ", sub_child.attrib["link"])
+                    sub_child.attrib["link"] = cube_name.body_name
+                    cube_name.body_N += 1
+                    print("Nome do link do corpo pai depois: ", sub_child.attrib["link"])
+                elif sub_child.tag == "child":
+                    print("Nome do link do corpo filho antes: ", sub_child.attrib["link"])
+                    sub_child.attrib["link"] = sphere.sphere_name
+                    print("Nome do link do corpo filho depois: ", sub_child.attrib["link"])
+
         robot.append(child)
+    return robot
 
-    ## AQUI COMEÇA O JOINTS
-    tree = ET.parse(input_file_limbs_joints[0])
-    root = tree.getroot()
-
-    print("######### Features do JOINT FIXO a ser construido #########")
-
-
+def JointRepresentation(robot, sphere, blackSphere, representative_Joint, root):
     for child in root:
 
-        if child.tag == "joint" and child.attrib["name"] == "fixed_joint_":
+        if child.tag == "joint" and child.attrib["name"] == "joint_2":
             for sub_child in child:
                 if sub_child.tag == "child":
                     print("Nome do limb do corpo como filho antes: ", sub_child.attrib["link"])
-                    sub_child.attrib["link"] = limbs_BlackSphere_name
+                    sub_child.attrib["link"] = blackSphere.blackSphere_name
                     print("Nome do limb do corpo como filho depois: ", sub_child.attrib["link"])
                 elif sub_child.tag == "parent":
                     print("Nome do joint fixo como pai: ", sub_child.attrib["link"])
-                    sub_child.attrib["link"] = limbs_joints_name
+                    sub_child.attrib["link"] = representative_Joint.representativeJoint_name
                     print("Nome do joint fixo como pai: ", sub_child.attrib["link"])
+                    representative_Joint.representativeJoints_N += 1
 
-        elif child.tag == "joint" and child.attrib["name"] == "fixed_joint":
+        elif child.tag == "joint" and child.attrib["name"] == "joint_1":
             for sub_child in child:
                 if sub_child.tag == "parent":
                     print("Nome do joint da esfera pai antes: ", sub_child.attrib["link"])
-                    sub_child.attrib["link"] = sphere_name
+                    sub_child.attrib["link"] = sphere.sphere_name
+                    sphere.sphere_N += 1
                     print("Nome do joint da esfera pai depois: ", sub_child.attrib["link"])
                 elif sub_child.tag == "child":
                     print("Nome do joint da esfera filho antes: ", sub_child.attrib["link"])
-                    sub_child.attrib["link"] = limbs_joints_name
+                    sub_child.attrib["link"] = representative_Joint.representativeJoint_name
                     print("Nome do joint da esfera filho depois: ", sub_child.attrib["link"])
 
         elif child.tag == "link":
             print("Nome do link da joint auxiliar antes: ", child.attrib["name"])
-            child.attrib["name"] = limbs_joints_name
+            child.attrib["name"] = representative_Joint.representativeJoint_name
             print("Nome do link da joint auxiliar depois: ", child.attrib["name"])
 
         robot.append(child)
+    return robot
 
-    ## AQUI COMEÇA O LIMBS
-    tree = ET.parse(input_file_limbs[0])
-    root = tree.getroot()
-
-    print("######### Features do LIMB a ser construido #########")
-
-
+def limbs(robot, blackSphere, root):
     for child in root:
         if child.tag == "link" and child.attrib["name"] == "":
             print("Nome do link da esfera no limb antes: ", child.attrib["name"])
-            child.attrib["name"] = limbs_BlackSphere_name
+            child.attrib["name"] = blackSphere.blackSphere_name
             print("Nome do link da esfera no limb depois: ", child.attrib["name"])
 
-        elif child.tag == "joint" and child.attrib["name"] == "fixed_joint_":
+        elif child.tag == "joint" and child.attrib["name"] == "joint_1":
             for sub_child in child:
                 if sub_child.tag == "parent":
                     print("Nome do link do limb pai antes: ", sub_child.attrib["link"])
-                    sub_child.attrib["link"] = limbs_BlackSphere_name
+                    sub_child.attrib["link"] = blackSphere.blackSphere_name
                     print("Nome do link do limb pai depois: ", sub_child.attrib["link"])
-                    BlackSphere_N += 1
+                    blackSphere.blackSphere_N += 1
 
         robot.append(child)
+    return robot
 
 
+
+def assemblement(input_file_body, input_file_sphereAUX, input_file_limbs, input_file_limbs_joints, output_file):
+
+    robot = ET.Element("robot", name="combined_robot")
+    sphere = SphereCounter()
+    cube_name = BodyCounter()
+    blackSphere = Limb_BlackSphereCounter()
+    representative_Joint = Representative_JointCounter()
+    Limb = Limbs_Counter()
+
+    ## HERE IS THE BODY CONSTRUCTION
+    root = treeFunction(input_file_body)
+    print("######### Features do CORPO a ser construido #########")
+    robot = body(robot, cube_name,  root)
+
+    ## HERE IS THE AUXILIAR SPHERE CONSTRUCTION
+    root = treeFunction(input_file_sphereAUX)
+    print("######### Features da ESFERA AUXILIAR a ser construido #########")
+    robot = AuxiliarSphere(robot, cube_name, sphere, root)
+
+    ## HERE IS THE JOINT CONSTRUCTION
+    root = treeFunction(input_file_limbs_joints)
+    print("######### Features do JOINT FIXO a ser construido #########")
+    robot = JointRepresentation(robot, sphere, blackSphere, representative_Joint, root)
+
+    ## HERE IS THE LIMB CONSTRUCTION
+    root = treeFunction(input_file_limbs)
+    print("######### Features do LIMB a ser construido #########")
+    robot = limbs(robot, blackSphere, root)
 
     # Save the modified URDF to a new file
     tree = ET.ElementTree(robot)
@@ -133,58 +175,16 @@ def modify_robot(input_file_body, input_file_sphereAUX, input_file_limbs, input_
     print("Done")
 
 
+def main(i):
+    input_file_body = ["body_Link_CUBE.urdf"]
+    input_file_sphereAUX = ["sphere_auxiliar_Link_BACK.urdf"]
+    input_file_limbs = ["limb_Link.urdf"]
+    input_file_limbs_joints = ["B_joint_fixed_BACK.urdf"]
 
-def main():
-
-    for i in range(1,11):
-        input_file_body= ["body_Link_CUBE.urdf"]
-        input_file_sphereAUX = [
-            "sphere_auxiliar_Link_BACK.urdf",
-            "sphere_auxiliar_Link_BOTTOM.urdf",
-            "sphere_auxiliar_Link_FRONT.urdf",
-            "sphere_auxiliar_Link_LEFT.urdf",
-            "sphere_auxiliar_Link_RIGHT.urdf",
-            "sphere_auxiliar_Link_TOP.urdf"
-        ]
-
-        input_file_limbs = [
-            "limb_Link.urdf",
-            "limb_Link_Small.urdf",
-            "wheel_link.urdf"
-        ]
-
-        input_file_limbs_joints = [
-            "L_joint_continuous.urdf",
-            "L_joint_fixed.urdf",
-            "L_joint_revolute.urdf",
-            "L_joint_revolute_horizontal.urdf"
-        ]
-
-        input_file_body_joints = [
-            "B_joint_continuous_BACK.urdf",
-            "B_joint_continuous_BOTTOM.urdf",
-            "B_joint_continuous_FRONT.urdf",
-            "B_joint_continuous_LEFT.urdf",
-            "B_joint_continuous_RIGHT.urdf",
-            "B_joint_continuous_TOP.urdf",
-            "B_joint_fixed_BACK.urdf",
-            "B_joint_fixed_BOTTOM.urdf",
-            "B_joint_fixed_FRONT.urdf",
-            "B_joint_fixed_LEFT.urdf",
-            "B_joint_fixed_RIGHT.urdf",
-            "B_joint_fixed_TOP.urdf",
-            "B_joint_revolute_BACK.urdf",
-            "B_joint_revolute_BOTTOM.urdf",
-            "B_joint_revolute_FRONT.urdf",
-            "B_joint_revolute_LEFT.urdf",
-            "B_joint_revolute_RIGHT.urdf",
-            "B_joint_revolute_TOP.urdf"
-        ]
-
-        output_file = f"corrected_robot{i}.urdf"  # Modified URDF for each iteration
-        modify_robot(input_file_body, input_file_sphereAUX, input_file_limbs, input_file_limbs_joints, output_file)
+    output_file = f"corrected_robot{i}.urdf"  # Modified URDF for each iteration
+    assemblement(input_file_body, input_file_sphereAUX, input_file_limbs, input_file_limbs_joints, output_file)
     return output_file
 
 
 if __name__ == "__main__":
-    file = main()
+    file = main(1)

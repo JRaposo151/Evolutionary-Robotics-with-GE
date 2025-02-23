@@ -28,7 +28,7 @@
 </link>
 
 
-  <joint name="joint_1" type="fixed">
+  <joint name="joint_2" type="fixed">
     <parent link=""/>
     <child link=""/>
     <origin xyz="0 0.2 0.005" rpy="1.6 0 0"/>
