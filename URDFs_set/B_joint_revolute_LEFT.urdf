@@ -38,7 +38,7 @@
     <origin xyz="-0.05 0 0" rpy="0 0 0"/>
   </joint>
 
-  <link name="bottom_sphere">
+  <link name="extra_sphere">
     <visual>
       <geometry>
         <sphere radius="0.02"/>

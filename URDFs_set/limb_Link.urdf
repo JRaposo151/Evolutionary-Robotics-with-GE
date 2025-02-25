@@ -55,7 +55,7 @@
     
 
    <!-- Joint for Limb -->
-  <joint name="bot_sphere_joint_limb" type="fixed">
+  <joint name="joint_2" type="fixed">
     <parent link="limb_link"/>
     <child link="limb_joint_bottom_blue_link"/>
     <origin xyz="0 0 0.09" rpy="0 0 0"/>

@@ -1,7 +1,7 @@
 import random
 from bigtree import Node
 
-random.seed(89)
+random.seed(81)
 
 # Define the grammar rules as a dictionary.
 # The keys are nonterminals (strings enclosed in "<" and ">") and the values

@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
 <robot name="B_JOINT_fixed">
-
-<joint name="joint_1" type="fixed">
-    <parent link=""/>
-    <child link="link_square"/>
+  <joint name="joint_1" type="fixed">
+    <parent link="back_sphere"/>
+    <child link=""/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
-
 <link name="link_square">
   <visual>
     <geometry>

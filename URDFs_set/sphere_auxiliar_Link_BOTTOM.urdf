@@ -1,9 +1,13 @@
-  <!-- Bottom Sphere -->
-  <joint name="bottom_sphere_joint_body2" type="fixed">
+<?xml version="1.0"?>
+<robot name="BODY_jointFixed_Bottom">
+
+<!-- Bottom Sphere -->
+  <joint name="joint_1" type="fixed">
     <parent link="body_link"/>
     <child link="bottom_sphere"/>
     <origin xyz="0 0 -0.05" rpy="0 0 0"/>
   </joint>
+
   <link name="bottom_sphere">
     <visual>
       <geometry>
@@ -23,6 +27,6 @@
       <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
     </inertial>
   </link>
-
+  </robot>
 
  

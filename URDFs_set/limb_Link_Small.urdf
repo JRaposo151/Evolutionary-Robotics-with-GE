@@ -3,7 +3,7 @@
 
 
 
-<link name="aux_sphere">
+<link name="">
     <visual>
       <geometry>
         <sphere radius="0.01"/>
