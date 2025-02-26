@@ -25,7 +25,7 @@
 
 
     <joint name="joint_1" type="fixed">
-    <parent link=""/>
+    <parent link="aux_sphere"/>
     <child link="limb_link"/>
     <origin xyz="0 0 0.09" rpy="0 0 0"/>
   </joint>

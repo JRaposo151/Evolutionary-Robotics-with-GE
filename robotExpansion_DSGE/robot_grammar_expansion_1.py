@@ -1,6 +1,6 @@
 import random
 
-random.seed(90)
+random.seed(80)
 
 # Define the grammar rules as a dictionary.
 # The keys are nonterminals (strings enclosed in "<" and ">") and the values

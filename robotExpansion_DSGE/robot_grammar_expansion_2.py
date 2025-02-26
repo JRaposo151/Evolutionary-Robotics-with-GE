@@ -1,7 +1,6 @@
 import random
 from bigtree import Node
 
-random.seed(81)
 
 # Define the grammar rules as a dictionary.
 # The keys are nonterminals (strings enclosed in "<" and ">") and the values
@@ -46,7 +45,7 @@ grammar = {
         "L_joint_revolute",
         "L_joint_continuous",
         "L_joint_fixed",
-        "L_joint_revolute_horizontal"
+        "L_joint_continuous_horizontal"
     ],
 
     "<Limb>": [

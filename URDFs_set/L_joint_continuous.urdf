@@ -12,7 +12,7 @@
   <link name="auxiliar">
     <visual>
       <geometry>
-        <cylinder length="0.07" radius="0.04"/>
+        <cylinder length="0.06" radius="0.04"/>
       </geometry>
       <material name="black">
         <color rgba="0.0 0.0 0.0 1.0"/>

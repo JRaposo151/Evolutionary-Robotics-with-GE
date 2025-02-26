@@ -3,6 +3,10 @@ from robotExpansion_DSGE import robot_grammar_expansion_2
 from URDFs_set import Autonomous_Assembly_working
 from TESTE_2 import *
 
+
+random.seed(81)
+
+
 robot_prototype, robot_tree = robot_grammar_expansion_2.generate_robot()
 print("Final generated string:")
 print("BEGINNING:::> " + robot_prototype + " <:::END")

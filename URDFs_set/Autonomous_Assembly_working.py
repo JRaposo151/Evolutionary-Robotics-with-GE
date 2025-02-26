@@ -30,7 +30,6 @@ class Extra_SphereCounter:
 
 
 
-#TODO CONSTRUIR AINDA CONDIÇÔES PARA SEGUIR O BACK; FRONT; ETC
 def treeFunction(file):
     piece_choice = random.choice(file)
     tree = ET.parse(piece_choice)
@@ -167,7 +166,7 @@ def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube
         robot.append(child)
     return robot
 
-def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, root):
+def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, faceSet_Covered, root):
     for child in root:
 
         if child.tag == "joint" and child.attrib["name"] == "joint_1":
@@ -181,6 +180,25 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                     sub_child.attrib["link"] = representative_Joint
                     print("Nome do joint da esfera filho depois: ", sub_child.attrib["link"])
 
+                elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO":
+                    if faceSet_Covered == "TOP":
+                        sub_child.attrib["rpy"] = "0 1.55 0"
+                    elif faceSet_Covered == "BOTTOM":
+                        sub_child.attrib["rpy"] = "0 -1.55 0"
+
+
+                elif sub_child.tag == "origin":
+                    if faceSet_Covered == "BACK":
+                        sub_child.attrib["rpy"] = "1.55 0 0"
+                    elif faceSet_Covered == "FRONT":
+                        sub_child.attrib["rpy"] = "-1.55 0 0"
+                    elif faceSet_Covered == "LEFT":
+                        sub_child.attrib["rpy"] = "0 -1.55 0"
+                    elif faceSet_Covered == "RIGHT":
+                        sub_child.attrib["rpy"] = "0 1.55 0"
+                    elif faceSet_Covered == "BOTTOM":
+                        sub_child.attrib["rpy"] = "0 3.15 0"
+
         elif child.tag == "joint" and child.attrib["name"] == "joint_2":
             for sub_child in child:
                 if sub_child.tag == "child":
@@ -191,6 +209,17 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                     print("Nome do joint fixo como pai: ", sub_child.attrib["link"])
                     sub_child.attrib["link"] = representative_Joint
                     print("Nome do joint fixo como pai: ", sub_child.attrib["link"])
+
+                elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO":
+                    if faceSet_Covered == "RIGHT":
+                        sub_child.attrib["rpy"] = "0 1.6 0"
+                    elif faceSet_Covered == "LEFT" or faceSet_Covered == "TOP" or faceSet_Covered == "BOTTOM":
+                        sub_child.attrib["rpy"] = "0 -1.6 0"
+                    elif faceSet_Covered == "FRONT":
+                        sub_child.attrib["rpy"] = "-1.6 0 0"
+                    elif faceSet_Covered == "BACK":
+                        sub_child.attrib["rpy"] = "1.6 0 0"
+
 
 
         elif child.tag == "link":
@@ -235,7 +264,7 @@ def limbs(robot, blackSphere, limb, extra_sphere, root):
                 if sub_child.tag == "child":
                     sub_child.attrib["link"] = extra_sphere.extraSphere_name
 
-        elif child.tag == "link" and child.attrib["name"] == "limb_small_link_robot":
+        elif child.tag == "link" and (child.attrib["name"] == "limb_small_link_robot" or "limb_joint_bottom_blue_link"):
             child.attrib["name"] = extra_sphere.extraSphere_name
 
 
@@ -255,7 +284,7 @@ def assemblement(robot_tree, robot_number = 1):
         "URDFs_set/sphere_auxiliar_Link_RIGHT.urdf", "URDFs_set/sphere_auxiliar_Link_TOP.urdf"
     ]
 
-    faceSet_Covered = []
+    faceSet_Covered = {}
     sphere = SphereCounter()
     blackSphere = Limb_BlackSphereCounter()
     extra_sphere = Extra_SphereCounter()
@@ -280,16 +309,19 @@ def assemblement(robot_tree, robot_number = 1):
                 root, direction = treeFunction(input_file_body)  # in this case, the direction doesn t matter
                 print("######### Features do CORPO a ser construido #########")
                 robot = body(robot, node.node_name, root)
+                faceSet_Covered[node.node_name] = []
 
             ## HERE IS THE AUXILIAR SPHERE CONSTRUCTION AND JOINT FOR BODY
             elif node.node_name.__contains__("B_joint"):
+                cube = node.parent.node_name
                 root, direction = treeFunction(input_file_sphereAUX)
                 while True:
-                    if direction in faceSet_Covered:
+                    if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
                         root, direction = treeFunction(input_file_sphereAUX)
-                    faceSet_Covered.append(direction.split(".urdf")[0])
-                    break
-                print(f"######### Features da ESFERA AUXILIAR a ser construido na parte {faceSet_Covered[-1]} #########")
+                    else:
+                        faceSet_Covered[cube].append(direction.split(".urdf")[0])
+                        break
+                print(f"######### Features da ESFERA AUXILIAR a ser construido na parte {faceSet_Covered.get(cube, [])[-1]} #########")
                 print(node.parent.node_name)
                 robot = AuxiliarSphere(robot, node.parent.node_name, sphere, root)
 
@@ -305,30 +337,31 @@ def assemblement(robot_tree, robot_number = 1):
 
             ## HERE IS THE LIMB JOINT CONSTRUCTION
             elif node.node_name.__contains__("L_joint"):
+                cube = node.parent.node_name
                 if node.parent.node_name.__contains__("body_Link_CUBE"):
                     root, direction = treeFunction(input_file_sphereAUX)
                     while True:
-                        if direction in faceSet_Covered:
+                        if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
                             root, direction = treeFunction(input_file_sphereAUX)
-                        faceSet_Covered.append(direction.split(".urdf")[0])
-                        break
-                    print(f"######### Features da ESFERA AUXILIAR a ser construido na parte {faceSet_Covered[-1]} #########")
+                        else:
+                            faceSet_Covered[cube].append(direction.split(".urdf")[0])
+                            break
+                    print(f"######### Features da ESFERA AUXILIAR a ser construido na parte {faceSet_Covered.get(cube, [])[-1]} #########")
                     print(node.parent.node_name)
+                    print(direction)
                     robot = AuxiliarSphere(robot, node.parent.node_name, sphere, root)
 
                     joint = node.node_name.split(" ")
                     root, direction = treeFunction(["URDFs_set/" + joint[-1] + ".urdf"])
                     print(f"######### Features do URDFs_set/" + joint[-1] + ".urdf" + " a ser construido #########")
-                    for child in node.children:
-                        robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, root)
-                        sphere.sphere_N +=1
+                    robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, faceSet_Covered.get(cube, [])[-1], root)
+                    sphere.sphere_N += 1
                 else:
                     joint = node.node_name.split(" ")
                     root, direction = treeFunction(["URDFs_set/" + joint[-1] + ".urdf"])
                     print(f"######### Features do URDFs_set/" + joint[-1] + ".urdf" + " a ser construido #########")
-                    for child in node.children:
-                        robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name, blackSphere, root)
-                        extra_sphere.Extra_N +=1
+                    robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name, blackSphere, "", root)
+                    extra_sphere.Extra_N += 1
 
 
 
