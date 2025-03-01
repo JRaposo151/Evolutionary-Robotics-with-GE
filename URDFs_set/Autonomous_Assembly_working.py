@@ -239,6 +239,7 @@ def assemblement(robot_tree, robot_number):
     sphere = SphereCounter()
     blackSphere = Limb_BlackSphereCounter()
     extra_sphere = Extra_SphereCounter()
+    direction_occupied = ""
 
     print("Assembling Started: ")
 
@@ -255,6 +256,21 @@ def assemblement(robot_tree, robot_number):
             root, direction = treeFunction(input_file_body)  # in this case, the direction doesn t matter
             robot = body(robot, node.node_name, root)
             faceSet_Covered[node.node_name] = []
+            if node.parent.node_name.__contains__("B_joint"):
+                cube = node.node_name
+                if direction_occupied == "LEFT":
+                    faceSet_Covered[cube].append("RIGHT")
+                if direction_occupied == "RIGHT":
+                    faceSet_Covered[cube].append("LEFT")
+                if direction_occupied == "TOP":
+                    faceSet_Covered[cube].append("BOTTOM")
+                if direction_occupied == "FRONT":
+                    faceSet_Covered[cube].append("BACK")
+                if direction_occupied == "BACK":
+                    faceSet_Covered[cube].append("FRONT")
+                if direction_occupied == "BOTTOM":
+                    faceSet_Covered[cube].append("TOP")
+
 
         ## HERE IS THE AUXILIAR SPHERE CONSTRUCTION AND JOINT FOR BODY
         elif node.node_name.__contains__("B_joint"):
@@ -265,6 +281,7 @@ def assemblement(robot_tree, robot_number):
                     root, direction = treeFunction(input_file_sphereAUX)
                 else:
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
+                    direction_occupied = direction.split(".urdf")[0]
                     break
             robot = AuxiliarSphere(robot, node.parent.node_name, sphere, root)
             # joint for the body
@@ -322,42 +339,3 @@ def assemblement(robot_tree, robot_number):
     print("--------------------------------------------")
 
     return output_file
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

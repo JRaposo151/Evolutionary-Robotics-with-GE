@@ -322,15 +322,3 @@ def assemblement(robot_tree, robot_number):
     print("--------------------------------------------")
 
     return output_file
-
-
-
-
-
-
-
-
-
-
-
-

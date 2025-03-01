@@ -1,7 +1,7 @@
 import random
 from bigtree import Node
 
-#random.seed(60)
+random.seed(80)
 
 
 # Define the grammar rules as a dictionary.
@@ -11,6 +11,7 @@ grammar = {
     "<start>": ["<BodyStructure>"],
     # Each face represents one side of the cube. Only 5 here because one can be seen as the face/head of the robot
     "<BodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
+    "<NewBodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
 
     # Each face set can be empty or be directed for a new extension: a new body link or new limbs
     "<FaceSet>": [
@@ -24,7 +25,7 @@ grammar = {
     ],
 
     # This rules will have the objective to increase the body structure
-    "<BodyExtension>": ["<B_Joint> <BodyStructure>"],
+    "<BodyExtension>": ["<B_Joint> <NewBodyStructure>"],
 
     # This rules and the next two will have the objective to add limbs and increase the total size of each one
     "<LimbChain>": ["<LimbAttachment> <LimbExtension>"],
