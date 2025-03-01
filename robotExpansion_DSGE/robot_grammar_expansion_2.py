@@ -1,9 +1,8 @@
 import random
 from bigtree import Node
 
-
 # Define the grammar rules as a dictionary.
-# The keys are nonterminals (strings enclosed in "<" and ">") and the values
+# The keys are non-terminals (strings enclosed in "<" and ">") and the values
 # are lists of possible productions (each production is a string of tokens).
 grammar = {
     "<start>": ["<BodyStructure>"],
@@ -57,9 +56,8 @@ grammar = {
 
 MAX_DEPTH = 8
 node_counter = 0  # Global counter to give unique IDs to nodes
-tree = Node(f"{node_counter} ROOT") # Global tree structure
+tree = Node(f"{node_counter} ROOT")  # Global tree structure
 parent = tree
-
 
 
 def expand(symbol, depth, bodyN, new_bodies):
@@ -69,7 +67,6 @@ def expand(symbol, depth, bodyN, new_bodies):
     :param new_bodies: A list where new bodies are to be expanded.
     :param symbol: The symbol to expand (a string).
     :param depth: Current recursion depth.
-    :param facesetCounter: Counter for FaceSet occurrences.
     :return: The expanded string and the tree of the construction.
     """
     global node_counter, tree, parent
@@ -107,7 +104,6 @@ def expand(symbol, depth, bodyN, new_bodies):
         Node(node_name, parent=parent)
         return ""
 
-
     # Split the production into tokens.
     tokens = production.split()
 
@@ -117,31 +113,38 @@ def expand(symbol, depth, bodyN, new_bodies):
     for token in tokens:
         # Starting a new non-terminal symbol.
         if token == "<FaceSet>":
-            face_counter += 1 # it helps debugging
+            face_counter += 1  # it helps debugging
             result_tokens.append("FaceSet:")
             parent = new_bodies[bodyN]
             if face_counter == 6:
                 new_bodies.pop()
+                bodyN -= 1
         # Starting a new non-terminal symbol.
         if token == "body_Link_CUBE":
-            bodyN +=1
+            bodyN += 1
         result_tokens.append(expand(token, depth + 1, bodyN, new_bodies))
-
 
     # This creates a new list filtered by spaces; each token different from "" will be included.
     results_tokens_filtered = [token for token in result_tokens if token.strip() != ""]
     return " ".join(results_tokens_filtered)
+
 
 def generate_robot():
     """
     Generate a complete URDF fragment from the grammar.
     """
     global node_counter, tree, parent
+    # Reset globals for each run:
+    node_counter = 0
+    tree = Node("0 ROOT")  # fresh tree with new root
+    parent = tree
+
 
     node_counter += 1
     new_bodies = []
     final_output = expand("<start>", 0, -1, new_bodies)
     return final_output, tree
+
 
 if __name__ == '__main__':
     final_str, tree_root = generate_robot()

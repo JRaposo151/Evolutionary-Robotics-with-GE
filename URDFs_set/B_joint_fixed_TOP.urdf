@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <robot name="B_JOINT_fixed">
+
   <joint name="joint_1" type="fixed">
     <parent link="back_sphere"/>
     <child link=""/>

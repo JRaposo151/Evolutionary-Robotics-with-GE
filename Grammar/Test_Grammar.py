@@ -46,7 +46,7 @@ grammar = {
         "L_joint_revolute",
         "L_joint_continuous",
         "L_joint_fixed",
-        "L_joint_revolute_horizontal"
+        "L_joint_continuous_horizontal"
     ],
 
     "<Limb>": [

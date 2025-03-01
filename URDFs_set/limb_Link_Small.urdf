@@ -26,13 +26,12 @@
 
 
     <joint name="joint_1" type="fixed">
-    <parent link="aux_sphere"/>
+    <parent link="a"/>
     <child link="limb_link"/>
-    <origin xyz="0 0 0.045" rpy="0 0 0"/>
+    <origin xyz="0 0 0.045" rpy="0 0 3.15"/>
   </joint>
 
 
-   <!-- Limb Link -->
   <link name="limb_link">
     <visual>
       <geometry>
@@ -40,6 +39,16 @@
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 1.0 1.0"/>
+      </material>
+    </visual>
+
+    <visual>
+      <origin xyz="0.02125 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.003 0.003 0.10"/>
+      </geometry>
+      <material name="red_line">
+        <color rgba="1.0 0.0 0.0 1.0"/>
       </material>
     </visual>
     <collision>
