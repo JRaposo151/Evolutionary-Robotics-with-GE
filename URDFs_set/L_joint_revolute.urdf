@@ -21,12 +21,12 @@
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.05"/>
+        <cylinder length="0.065" radius="0.04"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.5"/>
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
+    <inertia ixx="0.00038" ixy="0.0" ixz="0.0" iyy="0.00038" iyz="0.0" izz="0.0004"/>    
     </inertial>
   </link>
 

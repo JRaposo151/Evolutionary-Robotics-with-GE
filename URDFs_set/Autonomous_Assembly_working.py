@@ -28,6 +28,14 @@ class Extra_SphereCounter:
     def extraSphere_name(self):
         return f"extra_sphere_{self.Extra_N}"  # Automatically updates
 
+class JointCounter:
+    def __init__(self):
+        self.Joint_N = 0  # Initial counter
+
+    @property
+    def joint_name(self):
+        return f"joint_{self.Joint_N}"  # Automatically updates
+
 
 
 def treeFunction(file):
@@ -45,13 +53,15 @@ def body(robot, cube_name, root):
         robot.append(child)
     return robot
 
-def AuxiliarSphere(robot, cube_name, sphere, root):
+def AuxiliarSphere(robot, cube_name, joint, sphere, root):
     for child in root:
         if child.tag == "link":
             child.attrib["name"] = sphere.sphere_name
 
-
         elif child.attrib["name"] == "joint_1":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "parent":
                     sub_child.attrib["link"] = cube_name
@@ -63,10 +73,13 @@ def AuxiliarSphere(robot, cube_name, sphere, root):
     return robot
 
 
-def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube, root):
+def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube, joint, root):
     for child in root:
 
         if child.tag == "joint" and child.attrib["name"] == "joint_1":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "parent":
                     sub_child.attrib["link"] = sphere.sphere_name
@@ -85,6 +98,9 @@ def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube
 
 
             if child.tag == "joint" and child.attrib["name"] == "joint_2":
+                child.attrib["name"] = joint.joint_name
+                joint.Joint_N += 1
+
                 for sub_child in child:
                     if sub_child.tag == "child":
                         sub_child.attrib["link"] = sphere.sphere_name
@@ -93,6 +109,9 @@ def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube
 
 
             elif child.tag == "joint" and child.attrib["name"] == "joint_3":
+                child.attrib["name"] = joint.joint_name
+                joint.Joint_N += 1
+
                 for sub_child in child:
                     if sub_child.tag == "parent":
                         sub_child.attrib["link"] = sphere.sphere_name
@@ -101,25 +120,29 @@ def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube
                         sub_child.attrib["link"] = next_cube
 
 
-
-
         elif child.tag == "link":
             if child.attrib["name"]:
                 child.attrib["name"] = representative_Joint
 
         elif child.tag == "joint" and child.attrib["name"] == "joint_2":
-                for sub_child in child:
-                    if sub_child.tag == "child":
-                        sub_child.attrib["link"] = next_cube
-                    elif sub_child.tag == "parent":
-                        sub_child.attrib["link"] = representative_Joint
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
+            for sub_child in child:
+                if sub_child.tag == "child":
+                    sub_child.attrib["link"] = next_cube
+                elif sub_child.tag == "parent":
+                    sub_child.attrib["link"] = representative_Joint
         robot.append(child)
     return robot
 
-def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, faceSet_Covered, root):
+def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, faceSet_Covered, joint, root):
     for child in root:
 
         if child.tag == "joint" and child.attrib["name"] == "joint_1":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "parent":
                     sub_child.attrib["link"] = sphere
@@ -168,13 +191,16 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
 
 
         elif child.tag == "joint" and child.attrib["name"] == "joint_2":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "child":
                     sub_child.attrib["link"] = blackSphere.blackSphere_name
                 elif sub_child.tag == "parent":
                     sub_child.attrib["link"] = representative_Joint
 
-                elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO": # TODO VER SE ISTO É REVO ou CONTINUOUS
+                elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO":
                     if faceSet_Covered == "RIGHT":
                         sub_child.attrib["rpy"] = "0 1.6 0"
                     elif faceSet_Covered == "LEFT" or faceSet_Covered == "TOP" or faceSet_Covered == "BOTTOM":
@@ -192,13 +218,16 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
 
 
 
-def limbs(robot, blackSphere, limb, extra_sphere, root):
+def limbs(robot, blackSphere, limb, extra_sphere, joint, root):
     for child in root:
 
         if child.tag == "link" and child.attrib["name"] == "":
             child.attrib["name"] = blackSphere.blackSphere_name
 
         elif child.tag == "joint" and child.attrib["name"] == "joint_1":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "parent":
                     sub_child.attrib["link"] = blackSphere.blackSphere_name
@@ -210,6 +239,9 @@ def limbs(robot, blackSphere, limb, extra_sphere, root):
             child.attrib["name"] = limb
 
         elif child.tag == "joint" and child.attrib["name"] == "joint_2":
+            child.attrib["name"] = joint.joint_name
+            joint.Joint_N += 1
+
             for sub_child in child:
                 if sub_child.tag == "parent":
                     sub_child.attrib["link"] = limb
@@ -240,6 +272,7 @@ def assemblement(robot_tree, robot_number):
     blackSphere = Limb_BlackSphereCounter()
     extra_sphere = Extra_SphereCounter()
     direction_occupied = ""
+    joint = JointCounter()
 
     print("Assembling Started: ")
 
@@ -283,12 +316,12 @@ def assemblement(robot_tree, robot_number):
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
                     direction_occupied = direction.split(".urdf")[0]
                     break
-            robot = AuxiliarSphere(robot, node.parent.node_name, sphere, root)
+            robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
             # joint for the body
-            joint = node.node_name.split(" ")
-            root, direction = treeFunction(["URDFs_set/" + joint[-1] + "_" + direction])
+            joints = node.node_name.split(" ")
+            root, direction = treeFunction(["URDFs_set/" + joints[-1] + "_" + direction])
             for child in node.children:
-                robot = JointRepresentation_conctBody(robot, sphere, node.node_name, child.node_name, root)
+                robot = JointRepresentation_conctBody(robot, sphere, node.node_name, child.node_name, joint, root)
 
         ## HERE IS THE LIMB JOINT CONSTRUCTION
         elif node.node_name.__contains__("L_joint"):
@@ -301,34 +334,34 @@ def assemblement(robot_tree, robot_number):
                     else:
                         faceSet_Covered[cube].append(direction.split(".urdf")[0])
                         break
-                robot = AuxiliarSphere(robot, node.parent.node_name, sphere, root)
-                joint = node.node_name.split(" ")
-                root, direction = treeFunction(["URDFs_set/" + joint[-1] + ".urdf"])
-                robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, faceSet_Covered.get(cube, [])[-1], root)
+                robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
+                joints = node.node_name.split(" ")
+                root, direction = treeFunction(["URDFs_set/" + joints[-1] + ".urdf"])
+                robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, faceSet_Covered.get(cube, [])[-1], joint, root)
                 sphere.sphere_N += 1
                 extra_sphere.Extra_N += 1
 
             else:
-                joint = node.node_name.split(" ")
-                root, direction = treeFunction(["URDFs_set/" + joint[-1] + ".urdf"])
+                joints = node.node_name.split(" ")
+                root, direction = treeFunction(["URDFs_set/" + joints[-1] + ".urdf"])
 
                 if node.parent.node_name.__contains__("wheel"):
-                    robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere, "", root)
+                    robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere, "", joint, root)
                 else:
-                    robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name, blackSphere, "", root)
+                    robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name, blackSphere, "", joint, root)
                 extra_sphere.Extra_N += 1
 
         ## HERE IS THE LIMB CONSTRUCTION
         elif node.node_name.__contains__("limb_"):
             limb = node.node_name.split(" ")
             root, direction = treeFunction(["URDFs_set/" + limb[-1] + ".urdf"])
-            robot = limbs(robot, blackSphere, node.node_name, extra_sphere, root)
+            robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
 
 
         elif node.node_name.__contains__("wheel"):
             limb = node.node_name.split(" ")
             root, direction = treeFunction(["URDFs_set/" + limb[-1] + ".urdf"])
-            robot = limbs(robot, blackSphere, node.node_name, extra_sphere, root)
+            robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
 
     # Save the modified URDF to a new file
     tree = ET.ElementTree(robot)

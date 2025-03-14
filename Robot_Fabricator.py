@@ -12,8 +12,13 @@ for i in range(11):
     print("BEGINNING:::> " + robot_prototype + " <:::END")
     print("\nFull tree structure:")
     robot_tree.hshow()
+
+
     """
-    FALTA AQUI DEPOIS QUANTOS ROBOS DEVEM DE SER CONSTRUIDOS, NESTE CASO SE CALHAR UMA LISTA COM TODAS AS ARVORES PRODUZIDAS
+    É de notar que:
+        -> o robot_grammar_expansion_2 esta com as regras gramaticais com as 6 faces e sempre a funcionar com as 6 faces;
+        -> o robot_grammar_expansion_3 esta com as regras gramaticais novas com as 5 faces;
+        -> o Autonomous_Assembly_working é o mais atual sendo que tem as regras para novo cubo quando adicionado, anotando qual o lado ocupado
     """
     #robot_product = Autonomous_Assembly.assemblement(robot_tree, i)
     robot_product = Autonomous_Assembly_working.assemblement(robot_tree, i)

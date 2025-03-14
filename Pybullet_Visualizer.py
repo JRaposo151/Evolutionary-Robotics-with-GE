@@ -17,28 +17,20 @@ planeId = p.loadURDF("plane.urdf") # plane é o plano para o robo ficar e nao co
 startOrientation = p.getQuaternionFromEuler([0,0,0])
 
 
-for i in range(10):
-    filename = Autonomous_Assembly.main(i)
-
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range (60000):
     startPos = [0, 0, 1]
     if i < 10:
         print("corrected_robot"+str(i))
-        roboID = p.loadURDF("/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot"+str(i)+".urdf",startPos, startOrientation)
+        urdf_path = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"
+        if not os.path.exists(urdf_path):
+            print(f"ERROR: URDF file not found: {urdf_path}")
+        else:
+            roboID = p.loadURDF(urdf_path, startPos, startOrientation)
     p.stepSimulation()
     time.sleep(1./240.)
 cubePos, cubeOrn = p.getBasePositionAndOrientation(roboID)
 print(f"AQUI ESTA O PRINT --> {cubePos,cubeOrn}")
 p.disconnect()
 
-for i in range(10):
-    # Specify the file to be deleted
-    file_path = "/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot" + str(i) + ".urdf"
-    # Check if the file exists
-    if os.path.exists(file_path):
-        # Delete the file
-        os.remove(file_path)
-        print(f"File {file_path} has been deleted.")
-    else:
-        print(f"File {file_path} does not exist.")
+

@@ -21,12 +21,12 @@
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.05"/>
+        <cylinder length="0.07" radius="0.05"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.5"/>
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
+      <inertia ixx="0.00052" ixy="0.0" ixz="0.0" iyy="0.00052" iyz="0.0" izz="0.00063"/>
     </inertial>
   </link>
 
@@ -53,7 +53,7 @@
     </collision>
     <inertial>
       <mass value="0.5"/>
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025"/>
+      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008"/>
     </inertial>
   </link>
 

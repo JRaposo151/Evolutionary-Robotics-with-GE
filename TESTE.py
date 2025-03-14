@@ -1,31 +1,38 @@
-import xml.etree.ElementTree as ET
+import pybullet as p
+import time
+import pybullet_data
+import os
+
+from URDFs_set import Autonomous_Assembly
+
+physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
+
+p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
+
+p.setGravity(0,0,-9.8)
+
+planeId = p.loadURDF("plane.urdf") # plane é o plano para o robo ficar e nao continuar a cair
 
 
-def generate_urdf_files():
-    # Define the three output file names
-    urdf_filenames = ["file1.urdf", "file2.urdf", "file3.urdf"]
-
-    # Define the list of information to add in separate loops
-    info_list = ["XXX", "YYY", "WWW"]
-
-    # Loop over each file name
-    for i, filename in enumerate(urdf_filenames, start=1):
-        # Create the root element, e.g., <robot name="robot_1">
-        root = ET.Element("robot", name=f"robot_{i}")
-
-        # Use a loop to append info in stages
-        # 1st iteration: add "XXX"
-        # 2nd iteration: add "YYY"
-        # 3rd iteration: add "WWW"
-        for info in info_list:
-            info_element = ET.SubElement(root, "info")
-            info_element.text = info
-
-        # Build the tree and write to file
-        tree = ET.ElementTree(root)
-        tree.write(filename, encoding="utf-8", xml_declaration=True)
-        print(f"Generated {filename}")
+startOrientation = p.getQuaternionFromEuler([0,0,0])
 
 
-if __name__ == "__main__":
-    generate_urdf_files()
+#set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
+
+startPos = [0, 0, 1]
+
+i = 2
+
+for x in range (60000):
+    urdf_path = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"
+    if not os.path.exists(urdf_path):
+        print(f"ERROR: URDF file not found: {urdf_path}")
+    else:
+        roboID = p.loadURDF(urdf_path, startPos, startOrientation, useFixedBase=False   )
+        p.changeDynamics(roboID, -1, mass=1.0)  # Ensure it's not static
+    p.stepSimulation()
+    time.sleep(1./240.)
+cubePos, cubeOrn = p.getBasePositionAndOrientation(roboID)
+print(f"AQUI ESTA O PRINT --> {cubePos,cubeOrn}")
+p.disconnect()
+
