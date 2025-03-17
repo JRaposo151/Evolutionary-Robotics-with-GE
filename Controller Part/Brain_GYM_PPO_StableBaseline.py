@@ -1,3 +1,5 @@
+import math
+
 import gym
 from gym import spaces
 import pybullet as p
@@ -7,6 +9,7 @@ import time
 
 
 class URDFRobotEnv(gym.Env):
+
     def __init__(self, urdf_path, render=False):
         super(URDFRobotEnv, self).__init__()
         self.urdf_path = urdf_path
@@ -19,21 +22,33 @@ class URDFRobotEnv(gym.Env):
             p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
+        roboID = p.loadURDF(urdf_path)
+        """ Precisamos de saber quantos joints: """
+        numJoints = p.getNumJoints(roboID)
+        print(f"Number of joints here --> {numJoints}")
+
+
         # Define the action space.
-        # For example, assume 6 joint torque controls in the range [-1, 1]
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(6,), dtype=np.float32)
+        #
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(numJoints,), dtype=np.float32)
+        print("\n _____ACTION SPACE_____ \n")
+        print("The Action Space is: ", self.action_space)
+
 
         # Define the observation space.
         # For instance, 6 joint positions and 6 joint velocities
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(12,), dtype=np.float32)
+        print("_____OBSERVATION SPACE_____ \n")
+        print("The State Space is: ", self.observation_space)
 
-        self.robot = None
+
+        self.robot = roboID
 
     def reset(self):
         p.resetSimulation()
         p.setGravity(0, 0, -9.8)
         # Optionally load a plane
-        p.loadURDF("plane.urdf")
+        p.loadURDF("corrected_robot0.urdf")
         # Load your robot URDF; adjust base position as needed
         self.robot = p.loadURDF(self.urdf_path, basePosition=[0, 0, 0.5])
 
@@ -57,26 +72,38 @@ class URDFRobotEnv(gym.Env):
             time.sleep(1. / 240.)
 
         obs = self._get_observation()
-        reward = self._compute_reward()
+        reward = self.reward()
         done = self._check_done()
         info = {}
         return obs, reward, done, info
 
-    def _get_observation(self):
+    def get_observation(self):
         # For each joint, get position and velocity
         joint_states = p.getJointStates(self.robot, range(p.getNumJoints(self.robot)))
         positions = [state[0] for state in joint_states]
         velocities = [state[1] for state in joint_states]
         return np.array(positions + velocities, dtype=np.float32)
 
-    def _compute_reward(self):
-        # Define your reward function. For example, reward could be forward progress or maintaining balance.
-        # This is a placeholder; you need to design a reward that fits your goal.
-        return 0.0
+    def reward(self, basePosition, finalPosition):
+        """EUCLIDIAN DISTANCE para calcular a distancia em linha reta do ponto de partida"""
+        distance_traveled = math.sqrt((basePosition[0] - finalPosition[0]) ** 2 +
+                                      (basePosition[1] - finalPosition[1]) ** 2 +
+                                      (basePosition[2] - finalPosition[2]) ** 2)
+        """DEFINIR UM REWARD TENDO EM CONTA A DISTANCIA PERCORRIDA, talvez uma percentagem, quando mais longe, recebe DIST / 100""" #TODO
+        reward = distance_traveled / 100
 
-    def _check_done(self):
+        return reward
+
+    def check_done(self):
         # Define a condition to end the episode. For example, if the robot falls or after a fixed time.
+        """AQUI ESTAMOS A VER O QUAO OS ROBOS CONSEGUEM CHEGAR MAIS LONGE"""
         return False
 
     def render(self, mode='human'):
         pass
+
+
+if __name__ == '__main__':
+    i = 2
+    a = URDFRobotEnv(f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf")
+

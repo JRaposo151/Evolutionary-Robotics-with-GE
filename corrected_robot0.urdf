@@ -16,7 +16,7 @@
     </collision>
     <inertial>
       <mass value="5.0" />
-      <inertia ixx="0.025" ixy="0.0" ixz="0.0" iyy="0.025" iyz="0.0" izz="0.025" />
+      <inertia ixx="0.00833" ixy="0.0" ixz="0.0" iyy="0.00833" iyz="0.0" izz="0.00833" />
     </inertial>
   </link>
   <joint name="joint_0" type="fixed">
@@ -40,7 +40,7 @@
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008" />
     </inertial>
   </link>
   <joint name="joint_1" type="fixed">
@@ -59,12 +59,12 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.05 0.05 0.05" />
+        <box size="0.04 0.04 0.04" />
       </geometry>
     </collision>
     <inertial>
       <mass value="1.0" />
-      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.003" />
+      <inertia ixx="0.00027" ixy="0.0" ixz="0.0" iyy="0.00027" iyz="0.0" izz="0.00027" />
     </inertial>
   </link>
   <joint name="joint_2" type="fixed">
@@ -88,7 +88,7 @@
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008" />
     </inertial>
   </link>
   <joint name="joint_3" type="fixed">
@@ -121,7 +121,7 @@
     </collision>
     <inertial>
       <mass value="2.5" />
-      <inertia ixx="0.0125" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0125" />
+      <inertia ixx="0.00794" ixy="0.0" ixz="0.0" iyy="0.00794" iyz="0.0" izz="0.00122" />
     </inertial>
   </link>
   <joint name="joint_4" type="fixed">
@@ -145,14 +145,15 @@
     </collision>
     <inertial>
       <mass value="2.5" />
-      <inertia ixx="0.0125" ixy="0.0" ixz="0.0" iyy="0.0125" iyz="0.0" izz="0.0125" />
+      <inertia ixx="0.00098" ixy="0.0" ixz="0.0" iyy="0.00098" iyz="0.0" izz="0.00098" />
     </inertial>
   </link>
-  <joint name="joint_5" type="continuous">
+  <joint name="joint_5" type="revolute">
     <parent link="extra_sphere_1" />
     <child link="4 L_joint_continuous" />
     <origin xyz="0 0 0" rpy="0 0 0" />
     <axis xyz="0 0 1" />
+    <limit lower="-1000" upper="1000" effort="1.0" velocity="1.0" rpy="0 3.15 0" />
   </joint>
   <link name="4 L_joint_continuous">
     <visual>
@@ -165,12 +166,12 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.07" radius="0.03" />
+        <cylinder length="0.06" radius="0.04" />
       </geometry>
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00035" ixy="0.0" ixz="0.0" iyy="0.00035" iyz="0.0" izz="0.00040" />
     </inertial>
   </link>
   <joint name="joint_6" type="fixed">
@@ -251,7 +252,7 @@
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008" />
     </inertial>
   </link>
   <joint name="joint_9" type="fixed">
@@ -275,7 +276,7 @@
     </collision>
     <inertial>
       <mass value="1.0" />
-      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.003" />
+      <inertia ixx="0.00082" ixy="0.0" ixz="0.0" iyy="0.00082" iyz="0.0" izz="0.00082" />
     </inertial>
   </link>
   <joint name="joint_10" type="fixed">
@@ -299,7 +300,7 @@
     </collision>
     <inertial>
       <mass value="5.0" />
-      <inertia ixx="0.025" ixy="0.0" ixz="0.0" iyy="0.025" iyz="0.0" izz="0.025" />
+      <inertia ixx="0.00833" ixy="0.0" ixz="0.0" iyy="0.00833" iyz="0.0" izz="0.00833" />
     </inertial>
   </link>
   <joint name="joint_11" type="fixed">
@@ -323,7 +324,7 @@
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008" />
     </inertial>
   </link>
   <joint name="joint_12" type="revolute">
@@ -344,12 +345,12 @@
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.05" />
+        <cylinder length="0.065" radius="0.04" />
       </geometry>
     </collision>
     <inertial>
       <mass value="0.5" />
-      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+      <inertia ixx="0.00038" ixy="0.0" ixz="0.0" iyy="0.00038" iyz="0.0" izz="0.0004" />
     </inertial>
   </link>
   <joint name="joint_13" type="fixed">
