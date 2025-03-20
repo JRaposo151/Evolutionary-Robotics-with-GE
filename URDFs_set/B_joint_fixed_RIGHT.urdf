@@ -10,7 +10,7 @@
     <geometry>
       <box size="0.07 0.07 0.07" /> <!-- Length, width, and height of the box -->
     </geometry>
-    <material name="blue">
+    <material name="black">
       <color rgba="0.0 0.0 0.0 1.0" /> <!-- RGBA color for the link -->
     </material>
   </visual>

@@ -29,36 +29,37 @@ else:
 num_joints = p.getNumJoints(roboID)
 print("Number of total joints:", num_joints)
 
+movable_joints = []
 movable_joints_revolute = []
-movable_joints_continuous = []
+movable_joints_continuous = [] # this joint types are revolute but the continuous on the name is because they spin like a wheel
 
 for joint in range(num_joints):
     joint_info = p.getJointInfo(roboID, joint)
     joint_type = joint_info[2]
     print(joint_type)
     lower_limit, upper_limit = joint_info[8:10]
-    if lower_limit == upper_limit:  #TODO nao funcciona para continuous preciso de SOLUÇAO
+    if lower_limit == -1000 and upper_limit == 1000:
         movable_joints_continuous.append(joint)
+        movable_joints.append(joint)
     elif p.getJointInfo(roboID, joint)[2] in [0]: # Joint type: 0=revolute, 1=prismatic, 2=spherical, 3=planar, 4=fixed
         movable_joints_revolute.append(joint)
+        movable_joints.append(joint)
 
-num_movable_joints = len(movable_joints_continuous) + len(movable_joints_revolute)# Get number of joints that need control
-print("Number of joints movable:", num_movable_joints)
 
 # Define action limits for revolute joints (from URDF limits)
-revolute_limits_low = [-0.75] * num_movable_joints  # Min values for revolute joints (radians)
-revolute_limits_high = [0.75] * num_movable_joints# Max values for revolute joints (radians)
+revolute_limits_low = [-0.75] * len(movable_joints_revolute)  # Min values for revolute joints (radians)
+revolute_limits_high = [0.75] * len(movable_joints_revolute) # Max values for revolute joints (radians)
 
 # Define limits for continuous joints (full rotation allowed)
-continuous_limits_low = [-np.pi] * num_movable_joints  # -π radians
-continuous_limits_high = [np.pi] * num_movable_joints  # +π radians
+continuous_limits_low = [-1000] * len(movable_joints_continuous)
+continuous_limits_high = [1000] * len(movable_joints_continuous)
 
 # Combine limits: Only keep revolute and continuous joints
 low_limits = np.array(revolute_limits_low + continuous_limits_low)
 high_limits = np.array(revolute_limits_high + continuous_limits_high)
 
 # Define action space
-action_space = spaces.Box(low=low_limits, high=high_limits, dtype=np.float32)
+action_space = spaces.Box(low=low_limits, high=high_limits, dtype=np.float32) #TODO falta o shape
 
 print("Action Space:", action_space)
 print("Min Joint Values:", action_space.low)
@@ -72,7 +73,7 @@ while time.time() - start_time < 20:  # Run for 20 seconds
     # Sample a random action (within allowed joint limits)
     random_action = action_space.sample()
     #print("Random Action:", random_action)
-    for joint in range(num_joints):
+    for joint in movable_joints:
 
         joint_info = p.getJointInfo(roboID, joint)
         joint_type = joint_info[2]  # Joint type: 0=revolute, 1=prismatic, 2=spherical, 3=planar, 4=fixed

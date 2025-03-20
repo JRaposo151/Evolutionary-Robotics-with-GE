@@ -37,18 +37,18 @@
         <color rgba="0.0 1.0 0.0 1.0"/>
       </material>
     </visual>
-    <!-- Additional visual: red line on the wheel -->
+
+    <!-- Additional visual: red line on the wheel
     <visual>
-      <!-- Adjust origin to position the red line on the wheel's surface. Here we use a small offset along z. -->
       <origin xyz="0 0 0.011" rpy="0 0 0"/>
       <geometry>
-        <!-- A thin box that acts as a stripe. Adjust size as needed. The box length approximates the wheel's circumference. -->
         <box size="0.14 0.004 0.004"/>
       </geometry>
       <material name="red_line">
         <color rgba="1.0 0.0 0.0 1.0"/>
       </material>
-    </visual>
+    </visual>-->
+
     <collision>
       <geometry>
         <cylinder length="0.025" radius="0.07"/>
