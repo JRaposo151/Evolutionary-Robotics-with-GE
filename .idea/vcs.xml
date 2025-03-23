@@ -3,7 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Controller Part/pybullet_PPO" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Controller Part/pybullet_PPO/cuda-samples" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Controller/pybullet_PPO" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Controller/pybullet_PPO/cuda-samples" vcs="Git" />
   </component>
 </project>

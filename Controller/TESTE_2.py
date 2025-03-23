@@ -1,18 +1,21 @@
+import numpy as np
+import pybullet_data
 from stable_baselines3 import PPO
+from stable_baselines3.common.monitor import Monitor
+
 from Env import URDFRobotEnv
 import pybullet as p
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.evaluation import evaluate_policy
 import random
+import shimmy
+import gym
 import torch
-import numpy as np
-
 
 startOrientation = p.getQuaternionFromEuler([0, 0, 0])
 startPos = [0, 0, 0.2]
 flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT
 seed = 10
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
 
 
 # Check if CUDA is available
@@ -36,29 +39,32 @@ print(f"GPUs available: {torch.cuda.device_count()}")
 """
 ATIVAÇÃO DE CUDA AQUI 
 """
-#torch.device('cuda:'+str(torch.cuda.device_count()) if torch.cuda.is_available() else 'cpu')
+torch.device('cuda:'+str(torch.cuda.device_count()) if torch.cuda.is_available() else 'cpu')
 print('Using device:', 'cuda' if torch.cuda.is_available() else 'cpu', ', device number:', torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
+#env.seed(args.seed)
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
 
-
-for i in range(11):
+for i in range(1):
     print("------------- ------------- ------------- ------------- ")
     print(f'------------- Training Robot number {i} -------------')
     print("------------- ------------- ------------- ------------- ")
     ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"  # ESTE É O ROBO
 
-    env = URDFRobotEnv(ROBOT_URDF_PATH, startPos, startOrientation, flags, render=True)
+    env = URDFRobotEnv(ROBOT_URDF_PATH, startPos, startOrientation, flags, render=False)
     env.reset()
     env.let_robot_fall()
 
     model = PPO(
-        policy= 'MlpPolicy',
-        env=env,
-        learning_rate=0.0003,
+        policy = 'MlpPolicy',
+        env= env,
+        learning_rate= 0.0003,
         n_steps=2048,
-        batch_size=64,
+        batch_size = 64,
         n_epochs=4,
-        gamma=0.999,
+        gamma = 0.999,
         gae_lambda=0.98,
         ent_coef=0.01,
         verbose=1)
@@ -67,8 +73,3 @@ for i in range(11):
 
     model.save(f"ppo_robot{i}")
     #env.save("vec_normalize.pkl")
-    env.close()
-
-
-
-

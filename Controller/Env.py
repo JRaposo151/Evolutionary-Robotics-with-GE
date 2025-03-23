@@ -1,10 +1,9 @@
 import os
 import time
-
 import pybullet as p
 import pybullet_data
 import numpy as np
-import gym
+import gym  # note the change here
 from gym import spaces
 
 
@@ -35,7 +34,6 @@ class URDFRobotEnv(gym.Env):
         self.start_position = np.array(startPos)  # Store starting position
         self.start_orientation = np.array(startOrientation)
 
-
         # Connect to PyBullet
         if self.render_mode:
             p.connect(p.GUI)
@@ -43,8 +41,6 @@ class URDFRobotEnv(gym.Env):
             p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-
-
         p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
@@ -54,41 +50,32 @@ class URDFRobotEnv(gym.Env):
         p.loadURDF("plane.urdf")
 
         if not os.path.exists(urdf_path):
-            print(f"ERROR: URDF file not found: {urdf_path}")
-        else:
-            self.roboID = p.loadURDF(urdf_path, self.start_position, startOrientation, useFixedBase=False, flags=flags)
+            raise FileNotFoundError(f"ERROR: URDF file not found: {urdf_path}")
+
+        self.roboID = p.loadURDF(urdf_path, self.start_position, startOrientation, useFixedBase=False, flags=flags)
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
         self.movable_joints = []
-        self.movable_joints_revolute = []
-        self.movable_joints_continuous = []
+        limits_low = []
+        limits_high = []
+
 
         for joint in range(self.numJoints):
             joint_info = p.getJointInfo(self.roboID, joint)
             lower_limit, upper_limit = joint_info[8:10]
-
-            # Identify continuous joints (revolute without limits)
-            if lower_limit == -1000 and upper_limit == 1000:
-                self.movable_joints_continuous.append(joint)
-                self.movable_joints.append(joint)
-
             # Identify revolute joints with limits
-            elif p.getJointInfo(self.roboID, joint)[2] in [0]:
-                self.movable_joints_revolute.append(joint)
+            if p.getJointInfo(self.roboID, joint)[2] in [0]:
                 self.movable_joints.append(joint)
+                limits_low.append(lower_limit)
+                limits_high.append(upper_limit)
+
 
         self.num_movable_joints = len(self.movable_joints)
         print(f"Number of Movable Joints: {self.num_movable_joints}")
+        self.low_limits = np.array(limits_low)
+        self.high_limits = np.array(limits_high)
 
-        # Define Action Space (One value per movable joint)
-        revolute_limits_low = [-0.75] * len(self.movable_joints_revolute)
-        revolute_limits_high = [0.75] * len(self.movable_joints_revolute)
-        continuous_limits_low = [-1000] * len(self.movable_joints_continuous)
-        continuous_limits_high = [1000] * len(self.movable_joints_continuous)
-
-        self.low_limits = np.array(revolute_limits_low + continuous_limits_low)
-        self.high_limits = np.array(revolute_limits_high + continuous_limits_high)
 
         self.action_space = spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
         print("\n _____ACTION SPACE_____ \n")
@@ -129,9 +116,8 @@ class URDFRobotEnv(gym.Env):
                 -> Moves the joint to target_position using position control.
                 -> Other control modes (TORQUE_CONTROL, VELOCITY_CONTROL) exist but PPO works best with POSITION_CONTROL.
             """
-
-            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i])
-            p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=target_position)
+            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i]) #TODO REVER AQUI O CLIP
+            p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=target_position, targetVelocity=2.0, force=10) # normal speed is 2.0 radians/s
 
         p.stepSimulation()
 
@@ -145,13 +131,15 @@ class URDFRobotEnv(gym.Env):
 
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         observation = np.array(joint_positions + joint_velocities + list(robot_position))
+        truncated = False
 
         # Compute reward
-        reward, done = self.compute_reward(robot_position)
+        reward, done, truncated = self.compute_reward(robot_position)
 
-        return observation, reward, done, {}
+        return observation, reward, done, truncated, {}
 
     def compute_reward(self, current_position):
+        reward = 0
         """ Reward function based on Euclidean distance traveled.
 
             The reward function helps PPO learn how to make the robot move forward.
@@ -181,26 +169,33 @@ class URDFRobotEnv(gym.Env):
 
         """
         distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = distance_traveled * 10  # Reward moving forward, strong reward for distance travelled
-
-
-        # TODO possivel mudaça nos valores de reward e na maneira de que ele é calculado
-        # Penalize stopping (low velocity)
         joint_velocities = [p.getJointState(self.roboID, j)[1] for j in self.movable_joints]
-        if np.linalg.norm(joint_velocities) < 0.01:
+
+        # Penalize stopping
+        if distance_traveled == 0:
             reward -= 5  # Penalty for stopping
+        elif distance_traveled > 0:
+            reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+
+        #TODO ver se para a velocidade dos joints e necessario alguma penalização
+
+        # Stopping threshold
+        velocity_threshold = 0.01
+        # Penalize if all joints are moving too slowly
+        if np.all(np.abs(joint_velocities) < velocity_threshold):
+            reward -= 5
 
         # Penalize falling (if base Z position is too low)
         if current_position[2] < 0:
-            reward -= 100
-            return reward, True  # End episode
+            reward -= 10000
+            return reward, False, True   # End episode
 
         # End episode after 20 seconds (4800 steps at 240Hz)
         done = self.stepCounter >= 4800
 
-        return reward, done
+        return reward, done, False
 
-    def reset(self):
+    def reset(self, seed = None, options = None):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
 
@@ -215,7 +210,8 @@ class URDFRobotEnv(gym.Env):
         joint_velocities = [0] * self.num_movable_joints
         observation = np.array(joint_positions + joint_velocities + list(self.start_position))
 
-        return observation
+        info = {}
+        return observation, info
 
     def getRobotPosition(self):
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)

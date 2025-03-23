@@ -1,0 +1,35 @@
+Evaluation Results:
+
+Model 0 (ppo_robot0.zip):
+  Mean Reward = 1.36 +/- 0.13
+
+Model 1 (ppo_robot1.zip):
+  Mean Reward = 0.26 +/- 0.08
+
+Model 2 (ppo_robot2.zip):
+  Mean Reward = 0.11 +/- 0.02
+
+Model 3 (ppo_robot3.zip):
+  Mean Reward = 0.15 +/- 0.00
+
+Model 4 (ppo_robot4.zip):
+  Mean Reward = 0.35 +/- 0.07
+
+Model 5 (ppo_robot5.zip):
+  Mean Reward = 1.40 +/- 0.79
+
+Model 6 (ppo_robot6.zip):
+  Mean Reward = 0.43 +/- 0.17
+
+Model 7 (ppo_robot7.zip):
+  Mean Reward = 0.29 +/- 0.08
+
+Model 8 (ppo_robot8.zip):
+  Mean Reward = 0.16 +/- 0.00
+
+Model 9 (ppo_robot9.zip):
+  Mean Reward = 0.29 +/- 0.12
+
+Model 10 (ppo_robot10.zip):
+  Mean Reward = 0.15 +/- 0.01
+
