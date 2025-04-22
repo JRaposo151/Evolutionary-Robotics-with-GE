@@ -14,7 +14,7 @@ class URDFRobotEnv(gym.Env):
                  startPos,
                  startOrientation,
                  flags,
-                 render=False
+                 render=False,
                  ):
 
         #super is to ensure that Gym's built-in functionalities are properly initialized.
@@ -31,8 +31,10 @@ class URDFRobotEnv(gym.Env):
 
         self.urdf_path = urdf_path
         self.render_mode = render
-        self.start_position = np.array(startPos)  # Store starting position
+        self.start_position = np.array(startPos)  # Store starting position TODO CORRIGIR AQUI PARA DEPOIS A DISTANCIA SE BEM CALCULADA
         self.start_orientation = np.array(startOrientation)
+        #self.f = f
+        #self.v = v
 
         # Connect to PyBullet
         if self.render_mode:
@@ -86,12 +88,11 @@ class URDFRobotEnv(gym.Env):
         spaces.Box() defines the range of possible observations PPO receives at each time step:
         
             - self.num_movable_joints → Number of controllable joints.
-            - 2 * self.num_movable_joints → Stores:
+            - self.num_movable_joints → Stores:
                 -- Joint Positions (angle for each joint).
-                -- Joint Velocities (speed of each joint).
                 -- +3 → Stores robot base position (X, Y, Z) to track movement.
         """
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2 * self.num_movable_joints + 3,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints + 3,), dtype=np.float32)
         print("_____OBSERVATION SPACE_____ \n")
         print("The State Space is: ", self.observation_space)
 
@@ -114,10 +115,11 @@ class URDFRobotEnv(gym.Env):
             p.setJointMotorControl2(self.robot, joint, p.POSITION_CONTROL, targetPosition=target_position)
 
                 -> Moves the joint to target_position using position control.
-                -> Other control modes (TORQUE_CONTROL, VELOCITY_CONTROL) exist but PPO works best with POSITION_CONTROL.
+                -> Other control modes (TORQUE_CONTROL, VELOCITY_CONTROL).
             """
-            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i]) #TODO REVER AQUI O CLIP
-            p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=target_position, targetVelocity=2.0, force=10) # normal speed is 2.0 radians/s
+            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i])
+
+            p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=target_position, targetVelocity=2, force=10) # normal speed is 2.0 radians/s and force is 10
 
         p.stepSimulation()
 
@@ -130,7 +132,7 @@ class URDFRobotEnv(gym.Env):
             joint_velocities.append(state[1])  # Joint velocity
 
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
-        observation = np.array(joint_positions + joint_velocities + list(robot_position))
+        observation = np.array(joint_positions + list(robot_position))
         truncated = False
 
         # Compute reward
@@ -169,25 +171,12 @@ class URDFRobotEnv(gym.Env):
 
         """
         distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        joint_velocities = [p.getJointState(self.roboID, j)[1] for j in self.movable_joints]
 
-        # Penalize stopping
-        if distance_traveled == 0:
-            reward -= 5  # Penalty for stopping
-        elif distance_traveled > 0:
+        if distance_traveled >= 0:
             reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
 
-        #TODO ver se para a velocidade dos joints e necessario alguma penalização
-
-        # Stopping threshold
-        velocity_threshold = 0.01
-        # Penalize if all joints are moving too slowly
-        if np.all(np.abs(joint_velocities) < velocity_threshold):
-            reward -= 5
-
-        # Penalize falling (if base Z position is too low)
         if current_position[2] < 0:
-            reward -= 10000
+            reward -= 1000
             return reward, False, True   # End episode
 
         # End episode after 20 seconds (4800 steps at 240Hz)
@@ -205,10 +194,11 @@ class URDFRobotEnv(gym.Env):
         for joint in self.movable_joints:
             p.resetJointState(self.roboID, joint, targetValue=0, targetVelocity=0)
 
+        #TODO SE CALHAR METER O ROBO A CAIR PRIMEIRO APOS O RESET
+
         # Return new observation
         joint_positions = [0] * self.num_movable_joints
-        joint_velocities = [0] * self.num_movable_joints
-        observation = np.array(joint_positions + joint_velocities + list(self.start_position))
+        observation = np.array(joint_positions + list(self.start_position))
 
         info = {}
         return observation, info
@@ -217,7 +207,7 @@ class URDFRobotEnv(gym.Env):
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
 
-    def let_robot_fall(self, steps=250):
+    def let_robot_fall(self, steps=500):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()
@@ -227,7 +217,7 @@ class URDFRobotEnv(gym.Env):
         """ Disconnect PyBullet. """
         p.disconnect()
 
-#
+
 # if __name__ == '__main__':
 #     i = 0
 #     ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"  # ESTE É O ROBO

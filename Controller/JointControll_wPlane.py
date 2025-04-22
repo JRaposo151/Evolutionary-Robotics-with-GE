@@ -29,13 +29,13 @@ def test_joint(joint_index):
 
     for _ in range(3):  # Repeat motion 3 times
         # Move to max position
-        p.setJointMotorControl2(robot_id, joint_index, p.POSITION_CONTROL, targetPosition=1000, targetVelocity=2, force=10)
+        p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL, targetVelocity=10)
         for _ in range(1000):
             p.stepSimulation()
             time.sleep(1.0 / 240.0)
 
         # Move to min position
-        p.setJointMotorControl2(robot_id, joint_index, p.POSITION_CONTROL, targetPosition=-1000, targetVelocity=2, force=10)
+        p.setJointMotorControl2(robot_id, joint_index, p.VELOCITY_CONTROL, targetVelocity=-10)
         for _ in range(1000):
             p.stepSimulation()
             time.sleep(1.0 / 240.0)

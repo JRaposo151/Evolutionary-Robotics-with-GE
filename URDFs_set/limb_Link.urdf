@@ -41,20 +41,6 @@
         <color rgba="0.0 0.0 0.8 1.0"/>
       </material>
     </visual>
-
-    <!-- Additional visual: red vertical stripe on the cylinder's surface
-    <visual>
-       Offset by the cylinder's radius so it sits on the outer surface
-      <origin xyz="0.03125 0 0" rpy="0 0 0"/>
-      <geometry>
-         A thin box: width and depth very small, height equal to the cylinder's length
-        <box size="0.003 0.003 0.1875"/>
-      </geometry>
-      <material name="red_line">
-        <color rgba="1.0 0.0 0.0 1.0"/>
-      </material>
-    </visual>-->
-
     <collision>
       <geometry>
         <cylinder length="0.1875" radius="0.03125"/>

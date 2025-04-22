@@ -1,0 +1,25 @@
+<start>           ::= <BodyStructure>
+<BodyStructure>   ::= body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>
+<NewBodyStructure>::= body_Link_CUBE.urdf <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>
+
+<FaceSet>         ::= ε | <Extension>
+<Extension>       ::= <BodyExtension> | <LimbChain>
+
+<BodyExtension>   ::= <B_Joint> <NewBodyStructure>
+
+<LimbChain>       ::= <LimbAttachment> <LimbExtension>
+<LimbAttachment>  ::= <L_Joint> <Limb>
+<LimbExtension>   ::= ε | <L_Joint> <Limb> <LimbExtension>
+
+<B_Joint>         ::= B_joint_revolute.urdf
+                    | B_joint_continuous.urdf
+                    | B_joint_fixed.urdf
+
+<L_Joint>         ::= L_joint_revolute.urdf
+                    | L_joint_continuous.urdf
+                    | L_joint_fixed.urdf
+                    | L_joint_revolute_horizontal.urdf
+
+<Limb>            ::= limb_Link.urdf
+                    | limb_Link_Small.urdf
+                    | wheel_link.urdf

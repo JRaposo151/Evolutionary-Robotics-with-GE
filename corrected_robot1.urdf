@@ -43,12 +43,12 @@
       <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008" />
     </inertial>
   </link>
-  <joint name="joint_1" type="revolute">
+  <joint name="joint_1" type="continuous">
     <parent link="Sphere_0" />
     <child link="2 L_joint_continuous" />
     <origin xyz="0 0 0" rpy="1.55 0 0" />
     <axis xyz="0 0 1" rpy="1.55 0 0" />
-    <limit lower="-1000" upper="1000" effort="1.0" velocity="1.0" rpy="1.55 0 0" />
+    <limit effort="1.0" velocity="1.0" rpy="1.55 0 0" />
   </joint>
   <link name="2 L_joint_continuous">
     <visual>
@@ -101,7 +101,7 @@
   <link name="3 limb_Link_Small">
     <visual>
       <geometry>
-        <cylinder length="0.10" radius="0.02125" />
+        <cylinder length="0.10" radius="0.03" />
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 0.8 1.0" />
@@ -125,7 +125,7 @@
   <link name="extra_sphere_1">
     <visual>
       <geometry>
-        <sphere radius="0.02125" />
+        <sphere radius="0.03" />
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 0.8 1.0" />
@@ -417,7 +417,7 @@
   <link name="18 limb_Link_Small">
     <visual>
       <geometry>
-        <cylinder length="0.10" radius="0.02125" />
+        <cylinder length="0.10" radius="0.03" />
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 0.8 1.0" />
@@ -441,7 +441,7 @@
   <link name="extra_sphere_3">
     <visual>
       <geometry>
-        <sphere radius="0.02125" />
+        <sphere radius="0.03" />
       </geometry>
       <material name="blue">
         <color rgba="0.0 0.0 0.8 1.0" />

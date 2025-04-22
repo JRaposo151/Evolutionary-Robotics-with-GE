@@ -28,7 +28,6 @@
   </joint>
 
   <link name="limb_link">
-    <!-- Main visual: green cylinder for the wheel -->
     <visual>
       <geometry>
         <cylinder length="0.025" radius="0.07"/>
@@ -37,18 +36,6 @@
         <color rgba="0.0 1.0 0.0 1.0"/>
       </material>
     </visual>
-
-    <!-- Additional visual: red line on the wheel
-    <visual>
-      <origin xyz="0 0 0.011" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.14 0.004 0.004"/>
-      </geometry>
-      <material name="red_line">
-        <color rgba="1.0 0.0 0.0 1.0"/>
-      </material>
-    </visual>-->
-
     <collision>
       <geometry>
         <cylinder length="0.025" radius="0.07"/>

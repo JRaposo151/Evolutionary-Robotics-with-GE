@@ -41,15 +41,16 @@ print('Using device:', 'cuda' if torch.cuda.is_available() else 'cpu', ', device
 
 
 
-for i in range(11):
+for i in range(10):
     print("------------- ------------- ------------- ------------- ")
     print(f'------------- Training Robot number {i} -------------')
     print("------------- ------------- ------------- ------------- ")
-    ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"  # ESTE É O ROBO
+    ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{0}.urdf"  # ESTE É O ROBO
 
-    env = URDFRobotEnv(ROBOT_URDF_PATH, startPos, startOrientation, flags, render=True)
+
+    env = URDFRobotEnv(ROBOT_URDF_PATH, startPos, startOrientation, flags, render=False)
     env.reset()
-    env.let_robot_fall()
+    env.let_robot_fall() #TODO NAO PODE ESTAR AQUI MAS NO ENV
 
     model = PPO(
         policy= 'MlpPolicy',
@@ -61,13 +62,17 @@ for i in range(11):
         gamma=0.999,
         gae_lambda=0.98,
         ent_coef=0.01,
-        verbose=1)
+        verbose=0,
+        seed=seed
+        )
+
 
     model.learn(total_timesteps=1000000)
 
-    model.save(f"ppo_robot{i}")
+    model.save(f"testVandF_robot{i}")
     #env.save("vec_normalize.pkl")
     env.close()
+    break
 
 
 
