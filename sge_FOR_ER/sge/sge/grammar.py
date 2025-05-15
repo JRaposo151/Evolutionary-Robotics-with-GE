@@ -6,8 +6,8 @@ from bigtree import Node
 node_counter = 0  # Global counter to give unique IDs to nodes
 tree = Node(f"{node_counter} ROOT")  # Global tree structure
 parent = tree
-face_counter = 0
-bodyN = -1
+# face_counter = 0
+# bodyN = -1
 
 class Grammar:
     """Class that represents a grammar. It works with the prefix notation."""
@@ -172,20 +172,24 @@ class Grammar:
         return max(depths)
 
     def mapping(self, mapping_rules, positions_to_map=None, needs_python_filter=False):
-        if positions_to_map is None:
-            positions_to_map = [0] * len(self.ordered_non_terminals)
+        global node_counter, tree, parent
+        # Reset globals for each run:
+        node_counter = 0
+        tree = Node("0 ROOT")  # fresh tree with new root
+        parent = tree
         output = []
         new_bodies = []
-        max_depth = self._recursive_mapping(mapping_rules, positions_to_map, self.start_rule, 0, output, new_bodies)
+        if positions_to_map is None:
+            positions_to_map = [0] * len(self.ordered_non_terminals)
+        max_depth = self._recursive_mapping(mapping_rules, positions_to_map, self.start_rule, current_depth=0, output=output, new_bodies=new_bodies, bodyN=-1, face_counter=0)
         output = "".join(output)
         if self.grammar_file.endswith("pybnf"):
             output = self.python_filter(output)
         print("\n")
-        tree.hshow()
         return output, max_depth, tree
 
-    def _recursive_mapping(self, mapping_rules, positions_to_map, current_sym, current_depth, output, new_bodies):
-        global node_counter, parent, face_counter, bodyN
+    def _recursive_mapping(self, mapping_rules, positions_to_map, current_sym, current_depth, output, new_bodies, bodyN, face_counter):
+        global node_counter, tree, parent
         depths = [current_depth]
         if current_sym[1] == self.T:
             output.append(current_sym[0])
@@ -196,28 +200,32 @@ class Grammar:
                 Node(node_name, parent=parent)
                 # Starting a new non-terminal symbol.
             elif current_sym[0] != "body_Link_CUBE":
-                """
-                    Another terminal symbol instead body and empty
-                """
+                """ Another terminal symbol instead body and empty  """
                 node_name = f"{node_counter} {current_sym[0]}"
                 node_counter += 1
                 new_parent = Node(node_name, parent=parent)
                 parent = new_parent
             else:
-                """
-                    Here will be the body adiction
-                """
-                bodyN += 1
-                face_counter = 0
+                """ Here will be the body adiction """
                 node_name = f"{node_counter} {current_sym[0]}"
                 node_counter += 1
                 new_parent = Node(node_name, parent=parent)
                 parent = new_parent
                 new_bodies.append(new_parent)
-
         else:
             if current_sym[0] == "<FaceSet>":
+                # print(bodyN)
+                # print(face_counter)
+                # print(f"CUBO {parent.node_name} FACESET {face_counter}")
                 parent = new_bodies[bodyN]
+                if face_counter == 5 and not (parent.node_name.__contains__("0 body_Link_CUBE")):
+                    new_bodies.pop()
+                    bodyN -= 1
+                    face_counter = 0
+                if face_counter == 6:
+                    new_bodies.pop()
+                    bodyN -= 1
+                    face_counter = 0
             current_sym_pos = self.ordered_non_terminals.index(current_sym[0])
             choices = self.grammar[current_sym[0]]
             size_of_gene = self.count_number_of_options_in_production()
@@ -229,6 +237,18 @@ class Grammar:
                     expansion_possibility = self.grammar[current_sym[0]].index(rule)
                 else:
                     expansion_possibility = random.randint(0, size_of_gene[current_sym[0]] - 1)
+
+
+                """
+                During evolution, the genetic operators might change the genotype in a way that more integers will be necessary
+                than the ones that we have available. When this happens new derivation rules are selected randomly and added to the
+                genotype of the individual (lines 3-11).
+                
+                PAGINA 8 DO PAPER DO PROF NUNO
+                
+                Aqui a linha 252 aumenta o genotype/mapping_rules
+                """
+
                 mapping_rules[current_sym_pos].append(expansion_possibility)
             current_production = mapping_rules[current_sym_pos][positions_to_map[current_sym_pos]]
             positions_to_map[current_sym_pos] += 1
@@ -236,12 +256,13 @@ class Grammar:
             for next_sym in next_to_expand:
                 if next_sym[0] == "<FaceSet>":
                     face_counter += 1  # it helps debugging
-                    if face_counter == 6:
-                        new_bodies.pop()
-                        bodyN -= 1
-                        face_counter = 0
+                    # print(face_counter)
+                    parent = new_bodies[bodyN]
+                elif next_sym[0] == "body_Link_CUBE":
+                    bodyN += 1
+                    face_counter = 0
                 depths.append(
-                    self._recursive_mapping(mapping_rules, positions_to_map, next_sym, current_depth + 1, output, new_bodies))
+                    self._recursive_mapping(mapping_rules, positions_to_map, next_sym, current_depth + 1, output, new_bodies, bodyN, face_counter))
         return max(depths)
 
     @staticmethod

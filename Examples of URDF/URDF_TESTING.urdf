@@ -4,7 +4,7 @@
   <link name="body_link">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.1"/> <!-- Cube with 10cm sides -->
+        <box size="0.046 0.046 0.046"/> <!-- Cube with 10cm sides -->
       </geometry>
       <material name="red">
         <color rgba="1.0 0.0 0.0 1.0"/>
@@ -12,25 +12,27 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.1 0.1 0.1"/>
+        <box size="0.046 0.046 0.046"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="5.0"/>
-      <inertia ixx="0.025" ixy="0.0" ixz="0.0" iyy="0.025" iyz="0.0" izz="0.025"/>
-    </inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.0000353" ixy="0.0" ixz="0.0"
+      iyy="0.0000353" iyz="0.0"
+      izz="0.0000353"/>   
+     </inertial>
   </link>
   
    <joint name="joint_1" type="fixed">
     <parent link="body_link"/>
     <child link="front_sphere"/>
-    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 0.023" rpy="0 0 0"/>
   </joint>
 
   <link name="front_sphere">
     <visual>
       <geometry>
-        <sphere radius="0.02"/>
+        <sphere radius="0.01"/>
       </geometry>
       <material name="black">
         <color rgba="0 0 0 1.0"/>
@@ -47,37 +49,43 @@
     </inertial>
   </link>
 
-
-  <joint name="joint_1" type="fixed">
+<joint name="joint_1" type="continuous">
     <parent link="front_sphere"/>
-    <child link="link_square"/>
+    <child link="auxiliar"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1.0" velocity="1.0" rpy="0 3.15 0" />
   </joint>
-<link name="link_square">
-  <visual>
-    <geometry>
-      <box size="0.07 0.07 0.07" /> <!-- Length, width, and height of the box -->
-    </geometry>
-    <material name="blue">
-      <color rgba="0.0 0.0 0.0 1.0" /> <!-- RGBA color for the link -->
-    </material>
-  </visual>
-  <collision>
-    <geometry>
-      <box size="0.07 0.07 0.07" /> <!-- Same dimensions as the visual -->
-    </geometry>
-  </collision>
-  <inertial>
-    <mass value="1.0" /> <!-- Mass of the link -->
-    <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.003" /> <!-- Moment of inertia -->
+
+  <link name="auxiliar">
+    <visual>
+      <geometry>
+        <cylinder length="0.04" radius="0.02"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.04" radius="0.02"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" /> <!-- Mass of the link -->
+  <inertia 
+    ixx="7.5e-06" ixy="0.0" ixz="0.0"
+    iyy="7.5e-06" iyz="0.0"
+    izz="7.5e-06" />
   </inertial>
-</link>
+  </link>
+
 
 
   <joint name="joint_2" type="fixed">
-    <parent link="link_square"/>
+    <parent link="auxiliar"/>
     <child link="body_link2"/>
-    <origin xyz="0 0 0.07" rpy="0 0 0"/>
+    <origin xyz="0 0 0.035" rpy="0 0 0"/>
   </joint>
 
 
@@ -88,7 +96,7 @@
     <link name="body_link2">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.1"/> <!-- Cube with 10cm sides -->
+        <box size="0.046 0.046 0.046"/> <!-- Cube with 10cm sides -->
       </geometry>
       <material name="red">
         <color rgba="1.0 0.0 0.0 1.0"/>
@@ -96,13 +104,15 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.1 0.1 0.1"/>
+        <box size="0.046 0.046 0.046"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="5.0"/>
-      <inertia ixx="0.025" ixy="0.0" ixz="0.0" iyy="0.025" iyz="0.0" izz="0.025"/>
-    </inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.0000353" ixy="0.0" ixz="0.0"
+      iyy="0.0000353" iyz="0.0"
+      izz="0.0000353"/>   
+     </inertial>
   </link>
 
 

@@ -1,7 +1,8 @@
+import os
 import random
 import xml.etree.ElementTree as ET
 from bigtree import preorder_iter
-
+from pathlib import Path
 
 class SphereCounter:
     def __init__(self):
@@ -37,10 +38,12 @@ class JointCounter:
         return f"joint_{self.Joint_N}"  # Automatically updates
 
 
-
+BASE_DIR = Path(__file__).parent
 def treeFunction(file):
+
     piece_choice = random.choice(file)
-    tree = ET.parse(piece_choice)
+    urdf_path = (BASE_DIR / piece_choice).resolve()
+    tree = ET.parse(urdf_path)
     root = tree.getroot()
     direction = [piece_choice.split("_")[-1]]
     return root, direction[0]
@@ -160,21 +163,21 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                 elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_CONT_HZ":
                     if faceSet_Covered == "BACK":
                         sub_child.attrib["rpy"] = "1.55 0 0"
-                        sub_child.attrib["xyz"] = "0 -0.03 0"
+                        sub_child.attrib["xyz"] = "0 -0.02 0"
                     if faceSet_Covered == "FRONT":
                         sub_child.attrib["rpy"] = "-1.55 0 0"
-                        sub_child.attrib["xyz"] = "0 0.03 0"
+                        sub_child.attrib["xyz"] = "0 0.02 0"
                     if faceSet_Covered == "TOP":
-                        sub_child.attrib["xyz"] = "0 0 0.03"
+                        sub_child.attrib["xyz"] = "0 0 0.02"
                     if faceSet_Covered == "BOTTOM":
                         sub_child.attrib["rpy"] = "3.15 0 0"
-                        sub_child.attrib["xyz"] = "0 0 -0.03 "
+                        sub_child.attrib["xyz"] = "0 0 -0.02 "
                     if faceSet_Covered == "RIGHT":
                         sub_child.attrib["rpy"] = "0 1.55 0"
-                        sub_child.attrib["xyz"] = "0.03 0 0"
+                        sub_child.attrib["xyz"] = "0.02 0 0"
                     if faceSet_Covered == "LEFT":
                         sub_child.attrib["rpy"] = "0 -1.55 0"
-                        sub_child.attrib["xyz"] = "-0.03 0 0"
+                        sub_child.attrib["xyz"] = "-0.02 0 0"
 
 
 
@@ -259,12 +262,12 @@ def limbs(robot, blackSphere, limb, extra_sphere, joint, root):
 def assemblement(robot_tree, robot_number):
 
 
-    input_file_body = ["URDFs_set/body_Link_CUBE.urdf"]
+    input_file_body = ["body_Link_CUBE.urdf"]
 
     input_file_sphereAUX = [
-        "URDFs_set/sphere_auxiliar_Link_BACK.urdf", "URDFs_set/sphere_auxiliar_Link_BOTTOM.urdf",
-        "URDFs_set/sphere_auxiliar_Link_FRONT.urdf", "URDFs_set/sphere_auxiliar_Link_LEFT.urdf",
-        "URDFs_set/sphere_auxiliar_Link_RIGHT.urdf", "URDFs_set/sphere_auxiliar_Link_TOP.urdf"
+        "sphere_auxiliar_Link_BACK.urdf", "sphere_auxiliar_Link_BOTTOM.urdf",
+        "sphere_auxiliar_Link_FRONT.urdf", "sphere_auxiliar_Link_LEFT.urdf",
+        "sphere_auxiliar_Link_RIGHT.urdf", "sphere_auxiliar_Link_TOP.urdf"
     ]
 
     faceSet_Covered = {}
@@ -278,11 +281,11 @@ def assemblement(robot_tree, robot_number):
 
     # Robot file creation
     print(f"Robot number: {robot_number} being assembled...")
-    robot = ET.Element("robot", name=f"combined_robot{robot_number}")
+    robot = ET.Element("robot", name=f"combined_robot_{robot_number}")
 
     for node in preorder_iter(robot_tree):
         # for each node in the tree, it will be add to the robot file a component
-        output_file = f"corrected_robot{robot_number}.urdf"  # Modified URDF for each iteration
+        output_file = f"robot_{robot_number}.urdf"  # Modified URDF for each iteration
 
         ## HERE IS THE BODY CONSTRUCTION
         if node.node_name.__contains__("body_Link_CUBE"):
@@ -319,7 +322,7 @@ def assemblement(robot_tree, robot_number):
             robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
             # joint for the body
             joints = node.node_name.split(" ")
-            root, direction = treeFunction(["URDFs_set/" + joints[-1] + "_" + direction])
+            root, direction = treeFunction([joints[-1] + "_" + direction])
             for child in node.children:
                 robot = JointRepresentation_conctBody(robot, sphere, node.node_name, child.node_name, joint, root)
 
@@ -336,14 +339,14 @@ def assemblement(robot_tree, robot_number):
                         break
                 robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
                 joints = node.node_name.split(" ")
-                root, direction = treeFunction(["URDFs_set/" + joints[-1] + ".urdf"])
+                root, direction = treeFunction([joints[-1] + ".urdf"])
                 robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, faceSet_Covered.get(cube, [])[-1], joint, root)
                 sphere.sphere_N += 1
                 extra_sphere.Extra_N += 1
 
             else:
                 joints = node.node_name.split(" ")
-                root, direction = treeFunction(["URDFs_set/" + joints[-1] + ".urdf"])
+                root, direction = treeFunction([joints[-1] + ".urdf"])
 
                 if node.parent.node_name.__contains__("wheel"):
                     robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere, "", joint, root)
@@ -354,19 +357,26 @@ def assemblement(robot_tree, robot_number):
         ## HERE IS THE LIMB CONSTRUCTION
         elif node.node_name.__contains__("limb_"):
             limb = node.node_name.split(" ")
-            root, direction = treeFunction(["URDFs_set/" + limb[-1] + ".urdf"])
+            root, direction = treeFunction([limb[-1] + ".urdf"])
             robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
 
 
         elif node.node_name.__contains__("wheel"):
             limb = node.node_name.split(" ")
-            root, direction = treeFunction(["URDFs_set/" + limb[-1] + ".urdf"])
+            root, direction = treeFunction([limb[-1] + ".urdf"])
             robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
 
     # Save the modified URDF to a new file
     tree = ET.ElementTree(robot)
     ET.indent(tree, space="\t")
     ET.indent(tree, space="  ", level=0)
+    output_folder = "robots/"
+    # Ensure the output folder exists
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Full path to save
+    output_file = os.path.join(output_folder, output_file)
+
     tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Done, robot {robot_number} constructed and ready to train")
     print("--------------------------------------------")

@@ -63,7 +63,7 @@ class LaikagoEnv(gym.Env):
         if self.render_mode:
             time.sleep(1.0 / 240.0)
         new_action = 20 * action
-        #print(new_action)
+        #print(new_action )
         self.counter += 1
         for joint in self.movable_joints:
             p.setJointMotorControl2(self.robot, joint, p.VELOCITY_CONTROL, force=0.000)

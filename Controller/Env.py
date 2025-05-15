@@ -3,17 +3,15 @@ import time
 import pybullet as p
 import pybullet_data
 import numpy as np
-import gym  # note the change here
-from gym import spaces
+import gymnasium as gym
 
 
 
 class URDFRobotEnv(gym.Env):
     def __init__(self,
                  urdf_path,
-                 startPos,
-                 startOrientation,
-                 flags,
+                 v,
+                 f,
                  render=False,
                  ):
 
@@ -29,13 +27,13 @@ class URDFRobotEnv(gym.Env):
         """
         super(URDFRobotEnv, self).__init__()
 
+        self.flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT
         self.urdf_path = urdf_path
         self.render_mode = render
-        self.start_position = np.array(startPos)  # Store starting position TODO CORRIGIR AQUI PARA DEPOIS A DISTANCIA SE BEM CALCULADA
-        self.start_orientation = np.array(startOrientation)
-        #self.f = f
-        #self.v = v
-
+        self.start_position = np.array([0, 0, 0.5])  # Store starting position
+        self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
+        self.f = f
+        self.v = v
         # Connect to PyBullet
         if self.render_mode:
             p.connect(p.GUI)
@@ -54,7 +52,7 @@ class URDFRobotEnv(gym.Env):
         if not os.path.exists(urdf_path):
             raise FileNotFoundError(f"ERROR: URDF file not found: {urdf_path}")
 
-        self.roboID = p.loadURDF(urdf_path, self.start_position, startOrientation, useFixedBase=False, flags=flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
@@ -68,9 +66,17 @@ class URDFRobotEnv(gym.Env):
             lower_limit, upper_limit = joint_info[8:10]
             # Identify revolute joints with limits
             if p.getJointInfo(self.roboID, joint)[2] in [0]:
+                type = joint_info[12]
+                type_str = type.decode("utf-8")
+                if "continuous" in type_str:
+                    limits_low.append(-1)
+                    limits_high.append(1)
+                else:
+                    limits_low.append(lower_limit)
+                    limits_high.append(upper_limit)
+
                 self.movable_joints.append(joint)
-                limits_low.append(lower_limit)
-                limits_high.append(upper_limit)
+
 
 
         self.num_movable_joints = len(self.movable_joints)
@@ -79,7 +85,7 @@ class URDFRobotEnv(gym.Env):
         self.high_limits = np.array(limits_high)
 
 
-        self.action_space = spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
         print("\n _____ACTION SPACE_____ \n")
         print("The Action Space is: ", self.action_space)
 
@@ -87,12 +93,15 @@ class URDFRobotEnv(gym.Env):
         """
         spaces.Box() defines the range of possible observations PPO receives at each time step:
         
-            - self.num_movable_joints → Number of controllable joints.
             - self.num_movable_joints → Stores:
                 -- Joint Positions (angle for each joint).
+                -- Joint Velocities (velocity).
                 -- +3 → Stores robot base position (X, Y, Z) to track movement.
+                -- +4 → orientation quaternion 
+                -- +6 → linear and angular velocities 
+       
         """
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints + 3,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,), dtype=np.float32)
         print("_____OBSERVATION SPACE_____ \n")
         print("The State Space is: ", self.observation_space)
 
@@ -101,117 +110,79 @@ class URDFRobotEnv(gym.Env):
     def step(self, action):
         """ Apply action to the robot and compute reward. """
         self.stepCounter += 1
+        if self.render_mode:
+            time.sleep(1.0 / 240.0)
 
         # Apply actions to each movable joint
         for i, joint in enumerate(self.movable_joints):
-
-            """
-            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i])
-
-                -> Ensures PPO’s output doesn't exceed the allowed joint range.
-                -> Example: If a revolute joint can move between -0.75 and 0.75 radians, this clips the action to stay in that range.
-                
-                
+            joint_info = p.getJointInfo(self.roboID, joint)
+            type = joint_info[12]
+            """ 
             p.setJointMotorControl2(self.robot, joint, p.POSITION_CONTROL, targetPosition=target_position)
 
                 -> Moves the joint to target_position using position control.
                 -> Other control modes (TORQUE_CONTROL, VELOCITY_CONTROL).
             """
-            target_position = np.clip(action[i], self.low_limits[i], self.high_limits[i])
-
-            p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=target_position, targetVelocity=2, force=10) # normal speed is 2.0 radians/s and force is 10
+            type_str = type.decode("utf-8")
+            if "continuous" in type_str:
+                p.setJointMotorControl2(self.roboID, joint, p.VELOCITY_CONTROL, force=0.000)
+                p.setJointMotorControl2(self.roboID, joint, p.TORQUE_CONTROL, force=action[i] * self.f)
+            else:
+                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i], targetVelocity=self.v, force=self.f) # normal speed is 2.0 radians/s and force is 10
 
         p.stepSimulation()
-
-        # Get new state
-        joint_positions = []
-        joint_velocities = []
-        for joint in self.movable_joints:
-            state = p.getJointState(self.roboID, joint)
-            joint_positions.append(state[0])  # Joint position
-            joint_velocities.append(state[1])  # Joint velocity
-
-        robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
-        observation = np.array(joint_positions + list(robot_position))
+        robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
+        observation = self._get_observation(robot_position, ori)
         truncated = False
-
         # Compute reward
         reward, done, truncated = self.compute_reward(robot_position)
 
         return observation, reward, done, truncated, {}
 
+
+    def _get_observation(self,robot_position,ori):
+        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        # Get new state
+        js = p.getJointStates(self.roboID, self.movable_joints)
+        joint_states_position = np.array([s[0] for s in js], dtype=np.float32) # numero de joints movables
+        joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32)
+        observation = np.hstack([np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position, joint_states_velocity])
+        return observation
+
+
     def compute_reward(self, current_position):
-        reward = 0
-        """ Reward function based on Euclidean distance traveled.
-
-            The reward function helps PPO learn how to make the robot move forward.
-            It calculates how far the robot has traveled from its start position using Euclidean distance.
-
-            Step-by-Step Breakdown:
-                - Compute the Euclidean distance from the start position ( https://numpy.org/doc/2.1/reference/generated/numpy.linalg.norm.html ):
-                    -> distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-
-                - np.linalg.norm() calculates the straight-line distance between:
-                    -> current_position → Robot’s current (X, Y, Z) location.
-                    -> self.start_position → Robot’s spawn location.
-
-            Give higher rewards for greater distances:
-                -> reward = distance_traveled * 10
-
-            The further the robot moves, the higher the reward.
-            This encourages fast and efficient movement.
-
-
-            Same as:
-
-            EUCLIDIAN DISTANCE para calcular a distancia em linha reta do ponto de partida:
-                distance_traveled = math.sqrt((cubePos[0] - startPos[0])**2 +
-                                              (cubePos[1] - startPos[1])**2 +
-                                              (cubePos[2] - startPos[2])**2)
-
-        """
-        distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-
-        if distance_traveled >= 0:
-            reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
-
+        distance_traveled = current_position[1] - self.start_position[1]
+        #distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
+        reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
         if current_position[2] < 0:
-            reward -= 1000
             return reward, False, True   # End episode
-
         # End episode after 20 seconds (4800 steps at 240Hz)
         done = self.stepCounter >= 4800
-
         return reward, done, False
 
     def reset(self, seed = None, options = None):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
-
-        p.resetBasePositionAndOrientation(self.roboID, self.start_position, self.start_orientation)
-
-        # Reset all movable joints
-        for joint in self.movable_joints:
-            p.resetJointState(self.roboID, joint, targetValue=0, targetVelocity=0)
-
-        #TODO SE CALHAR METER O ROBO A CAIR PRIMEIRO APOS O RESET
-
+        p.resetSimulation()
+        p.setGravity(0, 0, -9.8)
+        p.loadURDF("plane.urdf")
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+        self.let_robot_fall()
         # Return new observation
-        joint_positions = [0] * self.num_movable_joints
-        observation = np.array(joint_positions + list(self.start_position))
+        observation = self._get_observation(self.start_position, self.start_orientation)
+        return observation, {}
 
-        info = {}
-        return observation, info
-
-    def getRobotPosition(self):
-        robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
-        return robot_position
-
-    def let_robot_fall(self, steps=500):
+    def let_robot_fall(self, steps=250):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()
             time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+
+    def getRobotPosition(self):
+        """ Returns the current robot position. """
+        robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
+        return robot_position
+
 
     def close(self):
         """ Disconnect PyBullet. """

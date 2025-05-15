@@ -11,7 +11,7 @@
 <link name="link_square">
   <visual>
     <geometry>
-      <box size="0.07 0.07 0.07" /> <!-- Length, width, and height of the box -->
+      <box size="0.03 0.03 0.03" /> <!-- Length, width, and height of the box -->
     </geometry>
     <material name="black">
       <color rgba="0.0 0.0 0.0 1.0" /> <!-- RGBA color for the link -->
@@ -19,12 +19,15 @@
   </visual>
   <collision>
     <geometry>
-      <box size="0.07 0.07 0.07" /> <!-- Same dimensions as the visual -->
+      <box size="0.03 0.03 0.03" /> <!-- Same dimensions as the visual -->
     </geometry>
   </collision>
   <inertial>
-    <mass value="1.0" /> <!-- Mass of the link -->
-  <inertia ixx="0.00082" ixy="0.0" ixz="0.0" iyy="0.00082" iyz="0.0" izz="0.00082"/>  
+     <mass value="0.05" /> <!-- Mass of the link -->
+  <inertia 
+    ixx="7.5e-06" ixy="0.0" ixz="0.0"
+    iyy="7.5e-06" iyz="0.0"
+    izz="7.5e-06" />
   </inertial>
 </link>
 
@@ -32,7 +35,7 @@
   <joint name="joint_2" type="fixed">
     <parent link="link_square"/>
     <child link="body_link2"/>
-    <origin xyz="0 -0.07 0" rpy="0 0 0"/>
+    <origin xyz="0 -0.03 0" rpy="0 0 0"/>
   </joint>
 
 

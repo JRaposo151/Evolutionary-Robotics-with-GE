@@ -12,7 +12,7 @@
   <link name="auxiliar">
     <visual>
       <geometry>
-        <cylinder length="0.06" radius="0.04"/>
+        <cylinder length="0.04" radius="0.02"/>
       </geometry>
       <material name="black">
         <color rgba="0.0 0.0 0.0 1.0"/>
@@ -20,19 +20,22 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.06" radius="0.04"/>
+        <cylinder length="0.04" radius="0.02"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.5"/>
-      <inertia ixx="0.00035" ixy="0.0" ixz="0.0" iyy="0.00035" iyz="0.0" izz="0.00040"/>
-      </inertial>
+          <mass value="0.05" /> <!-- Mass of the link -->
+    <inertia 
+      ixx="7.5e-06" ixy="0.0" ixz="0.0"
+      iyy="7.5e-06" iyz="0.0"
+      izz="7.5e-06" />
+    </inertial>
   </link>
 
    <joint name="joint_2" type="fixed">
     <parent link="auxiliar"/>
     <child link=""/>
-    <origin xyz="0.04 0 0.025" rpy="0 1.6 0"/>
+    <origin xyz="0.02 0 0.015" rpy="0 1.6 0"/>
   </joint>
 
 </robot>

@@ -1,4 +1,3 @@
-import os
 import time
 import gymnasium as gym
 import numpy as np
@@ -6,7 +5,7 @@ import pybullet as p
 import pybullet_data
 import torch
 from stable_baselines3 import PPO
-import tensorboard
+import os
 
 
 
@@ -19,8 +18,8 @@ class LaikagoEnv(gym.Env):
         self.flags = p.URDF_USE_SELF_COLLISION
         self.path = path
         # Observation: base position (3), orientation(4), linear velocity (3), angular velocity (3), joint positions (12) = 25 dimensions.
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(25,), dtype=np.float32)
-        self.action_space = gym.spaces.Box(low=-3.142, high=3.142, shape=(12,), dtype=np.float32)  # 12 joints
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(37,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(12,), dtype=np.float32)  # 12 joints
         self.render_mode = render
 
         # Connect to PyBullet only if not already connected.
@@ -68,24 +67,22 @@ class LaikagoEnv(gym.Env):
     def step(self, action):
         scaled_action = self.amp * action
         for i, joint in enumerate(self.movable_joints):
-            p.setJointMotorControl2(self.robot, joint, p.POSITION_CONTROL, targetPosition = scaled_action[i], targetVelocity=100, force=50)
+            p.setJointMotorControl2(self.robot, joint, p.POSITION_CONTROL, targetPosition = scaled_action[i], targetVelocity=50, force=50)
 
         p.stepSimulation()
         obs = self._get_observation()
         # Get position and orientation
         pos, _ = p.getBasePositionAndOrientation(self.robot)
-
         # Reward function: encourage forward motion, penalize instability
-        distance_traveled = np.linalg.norm(np.array(pos) - self.pos)
+        distance_traveled = pos[1]
 
-        reward = distance_traveled * 3  # Encourage forward motion
+        reward = distance_traveled  # Encourage forward motion
         # Check if robot has fallen
         base_too_low = pos[2] < 0.25  # Adjust threshold if needed
         terminated = False
         truncated = False
         # Penalize falling
         if base_too_low:
-            reward -= 5  # Immediate penalty for falling
             terminated = True
         return obs, reward, terminated, truncated, {}
 
@@ -96,9 +93,7 @@ class LaikagoEnv(gym.Env):
         useFixedBase = False
         self.robot = p.loadURDF(self.path, [0, 0, 0.5], self.ori, useFixedBase=useFixedBase, flags=self.flags)
         self.let_robot_fall()
-
         obs = self._get_observation()
-
         return obs, {}
 
 
@@ -108,9 +103,10 @@ class LaikagoEnv(gym.Env):
         # Get linear and angular velocities of the base
         lin_vel, ang_vel = p.getBaseVelocity(self.robot)
         # Get joint positions for all 12 actuated joints
-        joint_states = [p.getJointState(self.robot, joint)[0] for joint in self.movable_joints]
+        joint_states_position = [p.getJointState(self.robot, i)[0] for i in self.movable_joints]
+        joint_states_velocity = [p.getJointState(self.robot, i)[1] for i in self.movable_joints]
         # Use np.hstack to flatten and combine all components into a single 1D array
-        obs = np.hstack([np.array(pos), np.array(ori), np.array(lin_vel), np.array(ang_vel), np.array(joint_states)])
+        obs = np.hstack([np.array(pos), np.array(ori), np.array(lin_vel), np.array(ang_vel), np.array(joint_states_position), np.array(joint_states_velocity)])
         return obs.astype(np.float32)
 
 
@@ -148,44 +144,51 @@ def position():
 
     # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
 
-    # if not os.path.exists(f"ppo_laikago.zip"):
-    #     env = LaikagoEnv(path)
-    #     model = PPO(policy= 'MlpPolicy',
-    #                                     env=env,
-    #                                     learning_rate=0.0003,
-    #                                     n_steps=2048,
-    #                                     batch_size=64,
-    #                                     n_epochs=4,
-    #                                     gamma=0.999,
-    #                                     gae_lambda=0.98,
-    #                                     ent_coef=0.01,
-    #                                     verbose=1,
-    #                                     seed=seed,
-    #                                     tensorboard_log="./logs_2/"
-    #                                     )
-    #     model.learn(total_timesteps=300000)
-    #             # Save the trained model
-    #     model.save(f"ppo_laikago")
-    #     print(f" DOG Trained")
-    #     env.close()
-    # else:
-    #     pass
+    if not os.path.exists(f"ppo_laikago_TORQUE_CONTROL_3_OBS.zip"):
+        # Train the PPO model on this environment
+        from stable_baselines3.common.vec_env import SubprocVecEnv
 
-                # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
+        # Number of environments you want to train in parallel
+        # n_envs = 1
+        #
+        # # Create multiple environments using your factory
+        # env_fns = [make_laikago_env(path, render=False) for _ in range(n_envs)]
+        # vec_env = SubprocVecEnv(env_fns)  # Or use DummyVecEnv if you have debugging needs
+        env = LaikagoEnv(path, render=False)
+        model = PPO(policy='MlpPolicy',
+                    env=env,
+                    learning_rate=3e-3,
+                    n_steps=4096,
+                    batch_size=512,
+                    n_epochs=10,
+                    gamma=0.995,
+                    # PODEREI DIMUNUIR PARA  a smaller gamma (e.g., 0.98) makes the agent focus slightly more on immediate rewards, which can lead to trying more diverse behaviors early on.
+                    gae_lambda=0.95,
+                    ent_coef=0,
+                    # Increase Entropy Regularization This term encourages exploration by penalizing certainty (i.e., encourages the policy to remain more "random").
+                    verbose=1,
+                    seed=seed,
+                    # use_sde=True, #gSDE introduces structured noise that depends on the state, improving exploration in high-dimensional or continuous action spaces.
+                    # sde_sample_freq=2048,  # how often to resample noise; 4 = every 4 steps
+                    tensorboard_log="./logs_1/"
+                    )
+        model.learn(total_timesteps=1000000)
+        # Save the trained model
+        model.save(f"ppo_laikago_TORQUE_CONTROL_3_OBS")
+        print(f" DOG Trained")
+        env.close()
+    # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
 
+    # --------------------- Testing/Visualization Phase ------------------------
+    with open("Results2.txt", "w") as file:
 
-
-# --------------------- Testing/Visualization Phase ------------------------
-    with open("Results1.txt", "w") as file:
-
-        model = PPO.load(f"ppo_laikago")
+        model = PPO.load(f"ppo_laikago_TORQUE_CONTROL_3_OBS")
         test_env = LaikagoEnv(path, render=True)
 
         # Testing loop: run several episodes and record rewards
         episode_rewards = []
         num_episodes = 0
         obs, _ = test_env.reset()
-
 
         # Run a fixed number of simulation steps
         for _ in range(4800):
@@ -201,7 +204,7 @@ def position():
         test_env.close()
 
         # Compute and save statistics
-        robot_name = f"ppo_laikago"
+        robot_name = f"ppo_laikago_TORQUE_CONTROL_3_OBS"
         if episode_rewards:
             mean_reward = np.mean(episode_rewards)
             std_reward = np.std(episode_rewards)
@@ -210,7 +213,7 @@ def position():
 
             # Write results to file
             file.write(
-                        f"{robot_name}, Mean Reward: {mean_reward:.2f}, Std Reward: {std_reward:.2f}\n")
+                f"{robot_name}, Mean Reward: {mean_reward}, Std Reward: {std_reward:.2f}\n")
         else:
             print("No episodes completed.")
             file.write(f"{robot_name}, No episodes completed.\n")

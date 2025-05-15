@@ -1,7 +1,7 @@
 import random
 from bigtree import Node
 
-random.seed(80)
+random.seed(82)
 
 
 # Define the grammar rules as a dictionary.
@@ -120,9 +120,10 @@ def expand(symbol, depth, bodyN, new_bodies):
             face_counter += 1  # it helps debugging
             result_tokens.append("FaceSet:")
             parent = new_bodies[bodyN]
-            if face_counter == 6:
+            if face_counter == 5 and not (parent.node_name.__contains__("1 body_Link_CUBE")):
                 new_bodies.pop()
                 bodyN -= 1
+                print(parent.node_name)
         # Starting a new non-terminal symbol.
         if token == "body_Link_CUBE":
             bodyN += 1

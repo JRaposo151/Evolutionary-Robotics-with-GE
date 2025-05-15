@@ -1,0 +1,66 @@
+import os
+from stable_baselines3 import PPO
+from Env import URDFRobotEnv
+import pybullet as p
+import random
+import torch
+import numpy as np
+from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
+
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render):
+    def _init():
+        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        return env
+    return _init
+
+def train(PATH, name):
+    seed = 10
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        print("CUDA is available! You can use the GPU.")
+    else:
+        print("CUDA is not available. You are using the CPU.")
+
+    # Get number of GPUs available
+    print(f"GPUs available: {torch.cuda.device_count()}")
+
+    """
+    ATIVAÇÃO DE CUDA AQUI 
+    """
+
+    env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False)]
+    env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
+    env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
+    model = PPO(
+                policy='MlpPolicy',
+                env=env,
+                learning_rate=0.0003,
+                n_steps=2048,
+                batch_size=64,
+                n_epochs=10,
+                gamma=0.99,
+                gae_lambda=0.95,
+                ent_coef=0.0,
+                verbose=1,
+                seed=seed
+                )
+    model.learn(total_timesteps=1000000)
+
+    output_folder_brains = "robots_brains/"
+    output_folder_vec = "robots_vec/"
+    # Ensure the output folder exists
+    os.makedirs(output_folder_brains, exist_ok=True)
+    os.makedirs(output_folder_vec, exist_ok=True)
+    model_path = os.path.join(output_folder_brains, f"{name}")
+    model.save(model_path)
+    model_path = os.path.join(output_folder_vec, f"{name}.pkl")
+    env.save(model_path)
+    env.close()
+
+
+

@@ -5,13 +5,13 @@
   <joint name="joint_1" type="fixed">
     <parent link="body_link"/>
     <child link="bottom_sphere"/>
-    <origin xyz="0 0 -0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.023" rpy="0 0 0"/>
   </joint>
 
   <link name="bottom_sphere">
     <visual>
       <geometry>
-        <sphere radius="0.02"/>
+        <sphere radius="0.01"/>
       </geometry>
       <material name="black">
         <color rgba="0 0 0 1"/>
@@ -19,12 +19,14 @@
     </visual>
     <collision>
       <geometry>
-        <sphere radius="0.02"/>
+        <sphere radius="0.01"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="0.5"/>
-      <inertia ixx="0.00008" ixy="0.0" ixz="0.0" iyy="0.00008" iyz="0.0" izz="0.00008"/>
+      <mass value="0.004"/>
+      <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0"
+      iyy="1.7e-07" iyz="0.0"
+      izz="1.7e-07"/>
     </inertial>
   </link>
   </robot>

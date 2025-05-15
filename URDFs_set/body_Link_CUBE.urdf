@@ -4,7 +4,7 @@
   <link name="body_link">
     <visual>
       <geometry>
-        <box size="0.1 0.1 0.1"/> <!-- Cube with 10cm sides -->
+        <box size="0.046 0.046 0.046"/> <!-- Cube with 10cm sides -->
       </geometry>
       <material name="red">
         <color rgba="1.0 0.0 0.0 1.0"/>
@@ -12,12 +12,14 @@
     </visual>
     <collision>
       <geometry>
-        <box size="0.1 0.1 0.1"/>
+        <box size="0.046 0.046 0.046"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="5.0"/>
-      <inertia ixx="0.00833" ixy="0.0" ixz="0.0" iyy="0.00833" iyz="0.0" izz="0.00833"/>   
+      <mass value="0.1"/>
+      <inertia ixx="0.0000353" ixy="0.0" ixz="0.0"
+      iyy="0.0000353" iyz="0.0"
+      izz="0.0000353"/>   
      </inertial>
   </link>
 
