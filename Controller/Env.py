@@ -27,7 +27,7 @@ class URDFRobotEnv(gym.Env):
         """
         super(URDFRobotEnv, self).__init__()
 
-        self.flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT
+        self.flags = p.URDF_USE_SELF_COLLISION
         self.urdf_path = urdf_path
         self.render_mode = render
         self.start_position = np.array([0, 0, 0.5])  # Store starting position
@@ -41,7 +41,7 @@ class URDFRobotEnv(gym.Env):
             p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+        p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
@@ -80,14 +80,14 @@ class URDFRobotEnv(gym.Env):
 
 
         self.num_movable_joints = len(self.movable_joints)
-        print(f"Number of Movable Joints: {self.num_movable_joints}")
+        # print(f"Number of Movable Joints: {self.num_movable_joints}")
         self.low_limits = np.array(limits_low)
         self.high_limits = np.array(limits_high)
 
 
         self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
-        print("\n _____ACTION SPACE_____ \n")
-        print("The Action Space is: ", self.action_space)
+        # print("\n _____ACTION SPACE_____ \n")
+        # print("The Action Space is: ", self.action_space)
 
         # Define Observation Space (Joint Positions + Velocities + Base Position)
         """
@@ -102,10 +102,19 @@ class URDFRobotEnv(gym.Env):
        
         """
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,), dtype=np.float32)
-        print("_____OBSERVATION SPACE_____ \n")
-        print("The State Space is: ", self.observation_space)
+        # print("_____OBSERVATION SPACE_____ \n")
+        # print("The State Space is: ", self.observation_space)
 
         self.stepCounter = 0  # Track steps per episode
+
+        for i in range(p.getNumJoints(self.roboID)):
+            joint_info = p.getJointInfo(self.roboID, i)
+            link_name = joint_info[12].decode("utf-8")
+
+            # Disable ALL collisions for links that are just visual joints
+            if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                link_index = joint_info[0]
+                p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
@@ -143,9 +152,13 @@ class URDFRobotEnv(gym.Env):
     def _get_observation(self,robot_position,ori):
         lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
         # Get new state
-        js = p.getJointStates(self.roboID, self.movable_joints)
-        joint_states_position = np.array([s[0] for s in js], dtype=np.float32) # numero de joints movables
-        joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32)
+        if self.num_movable_joints == 0:
+            joint_states_position = np.array([0,0,0], dtype=np.float32)  # numero de joints movables
+            joint_states_velocity = np.array([0,0,0], dtype=np.float32)
+        else:
+            js = p.getJointStates(self.roboID, self.movable_joints)
+            joint_states_position = np.array([s[0] for s in js], dtype=np.float32) # numero de joints movables
+            joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32)
         observation = np.hstack([np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position, joint_states_velocity])
         return observation
 
@@ -154,6 +167,11 @@ class URDFRobotEnv(gym.Env):
         distance_traveled = current_position[1] - self.start_position[1]
         #distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
         reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+
+        # Terminate and punish if robot flies too high
+        if current_position[2] > 0.3:  # adjust threshold depending on spawn height
+            return -1.0, True, True  # strong punishment, end episode
+
         if current_position[2] < 0:
             return reward, False, True   # End episode
         # End episode after 20 seconds (4800 steps at 240Hz)
@@ -164,9 +182,26 @@ class URDFRobotEnv(gym.Env):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
         p.resetSimulation()
+
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
+        # Show contact points in PyBullet
+        p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
+        p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+
         p.setGravity(0, 0, -9.8)
         p.loadURDF("plane.urdf")
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+
+        for i in range(p.getNumJoints(self.roboID)):
+            joint_info = p.getJointInfo(self.roboID, i)
+            link_name = joint_info[12].decode("utf-8")
+
+            # Disable ALL collisions for links that are just visual joints
+            if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                link_index = joint_info[0]
+                p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
+
         self.let_robot_fall()
         # Return new observation
         observation = self._get_observation(self.start_position, self.start_orientation)

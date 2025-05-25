@@ -1,6 +1,12 @@
 import os
 import random
 import sys
+from pathlib import Path
+
+import numpy as np
+import pybullet as p
+import pybullet_data
+
 from sge_FOR_ER.sge.sge import grammar as grammar
 from sge_FOR_ER.sge.sge import logger as logger
 from datetime import datetime
@@ -13,8 +19,8 @@ from sge_FOR_ER.sge.sge.parameters import (
     set_parameters,
     load_parameters
 )
-from bigtree import Node
 from URDFs_set import Autonomous_Assembly_working
+
 
 
 def generate_random_individual():
@@ -32,19 +38,28 @@ def make_initial_population():
 def evaluate(ind, eval_func, name):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
-    tree.hshow()
+    #tree.hshow()
     """AQUI CONSTRUIR O ROBO COM AS TREES"""
     Autonomous_Assembly_working.assemblement(tree, name)
-    ROBOT_PATH = f"../../sge/examples/robots/{name}.urdf"
-    # TODO AQUI REVER E FAZER TREINO DE PPO E AVALIAÇÂO
-    quality, other_info = eval_func.evaluate_robot(ROBOT_PATH, name)
+    # Absolute path to the URDF
+    script_dir = Path(__file__).resolve().parent  # sge/
+    ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
+
+    if not ROBOT_PATH.is_file():
+        raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
+
+    if not has_movable_joints(ROBOT_PATH):
+        ind['fitness'] = 0
+        ind['fitness'] = float(ind['fitness'])
+    else:
+        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}")
+        ind['fitness'] = quality
+        ind['fitness'] = float(ind['fitness'])
+        ind['other_info'] = other_info
     ind['phenotype'] = phen
-    ind['fitness'] = quality
-    ind['other_info'] = other_info
-    ind['mapping_values']= mapping_values
+    ind['mapping_values'] = mapping_values
     ind['tree_depth'] = tree_depth
     ind['name'] = f"robot_{name}.urdf"
-
 
 def setup(parameters_file_path = None):
     if parameters_file_path is not None:
@@ -59,43 +74,48 @@ def setup(parameters_file_path = None):
     grammar.set_max_tree_depth(params['MAX_TREE_DEPTH'])
     grammar.set_min_init_tree_depth(params['MIN_TREE_DEPTH'])
 
+def has_movable_joints(robot_path):
+    p.connect(p.DIRECT)
+    p.setAdditionalSearchPath(pybullet_data.getDataPath())
+    # Parse the URDF to check for movable joints
+    robot = p.loadURDF(str(robot_path))
+    joints = p.getNumJoints(robot)
+    movable_joints = [
+        j for j in range(joints)
+        if p.getJointInfo(robot, j)[2] in [4]]
+    p.disconnect()
+    return len(movable_joints) > 0
 
 def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_DIR = "../examples/robots"
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
     it = 0
-    robot_number = 0
+
+
     while it <= params['GENERATIONS']:
+        robot_number = 0
         mutation_rate = it / params['GENERATIONS']
         crossover_rate = 1 - mutation_rate
         for i in tqdm(population):
             name = f"GEN_{it}_number_{robot_number}"
             if i['fitness'] is None:
-
-                # TODO AQUI É A FASE DE ENTAO TREINAR E AVALIAR OS ROBOTS PARA SE TER A FITNESS
-                # TODO AQUI INICIALMENTE PSSO STRIBUIR A LA PATA
                 """
-                CONSTRUCTION OF THE POPULATION AND EVALUATION ---> FALTA A AVALIAÇÃO
+                CONSTRUCTION OF THE POPULATION AND EVALUATION
                 """
                 evaluate(i, evaluation_function, name)
                 robot_number += 1
-        population.sort(key=lambda x: x['fitness'])
-        logger.evolution_progress(it, population)
 
-        # TODO AQUI TER ALGO QUE GUARDE O MELHOR INDIVIDUO / fenotipo ou arvore DE CADA GERAÇÃO, GUARDE O FITNESS
+        population.sort(key=lambda x: x['fitness'], reverse=True)
+        #logger.evolution_progress(it, population)
+
 
         # TODO PROCESOS DE SELEÇÂO -> DUVIDA AQUI NESTA SELECAO ????????????????????????????????????????????????????????????????????
         new_population = population[:params['ELITISM']]
         print(len(new_population))
         print(params['POPSIZE'])
-
-
         while len(new_population) < params['POPSIZE']:
             name = f"GEN_{it}_number_{robot_number}"
-            print(len(new_population))
-
-            #TODO VER SE ALGUMA COISA É CONSTRUIDA --> SIM É CONSTRUIDO
             if random.random() < crossover_rate:
                 p1 = tournament(population, params['TSIZE'])
                 p2 = tournament(population, params['TSIZE'])
@@ -105,28 +125,71 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
                 ni = tournament(population, params['TSIZE'])
             ni = mutate(ni, mutation_rate)
 
-            # TODO FAZER AVALICAO PARA ENTAO ESTA NOVA POPULACAO TER FITNESS  AQUI ANTES DO APPEND
+            evaluate(ni, evaluation_function, name)
             new_population.append(ni)
-        #TODO HA UM ERRO QUANDO O POPSIZE E MAIOR QUE 120 -> Erro com o valor de depth da arvore, ha um robo que esta a ficar muito grande
-        new_population.sort(key=lambda x: x['fitness'])
 
+        new_population.sort(key=lambda x: x['fitness'], reverse=True)
         #TODO VER SE REALMENTE É NECESSARIO
         logger.evolution_progress(it, new_population)
 
-        #TODO VER QUANTOS PASSAM REALMENTE
         population = new_population
+        robots = "../examples/robots"
+        brain_paths = "../examples/robots_brains"
+        vec_paths = "../examples/robots_vec"
+        ind_save_path = "../examples/robots_ind"
+        paths = [robot_DIR,brain_paths, vec_paths]
+        survivors = [os.path.splitext(ind['name'])[0] for ind in population]
+        for path in paths:
+            for file in sorted(os.listdir(path)):
+                file_path = os.path.join(path, file)
+                base_name = os.path.splitext(file)[0]
+                # Check if the file is NOT in the list
+                if base_name not in survivors:
+                    print(f"Deleting: {file}")
+                    os.remove(file_path)  # delete the file
+                else:
+                    print(f"Keeping: {file}")
 
+        os.makedirs(ind_save_path, exist_ok=True)
+        import shutil
+        # Find best individual of current generation
+        best_ind = max(population, key=lambda ind: ind['fitness'])  # or min(), depending on fitness goal
+        # Extract base name without extension (e.g., robot_GEN_000_number_0)
+        base_name = os.path.splitext(best_ind['name'])[0]
+        generation_number = it
+        gen_str = f"{generation_number:03d}"
+        save_prefix = f"best_gen_{gen_str}"
+        save_path = os.path.join(ind_save_path, save_prefix)
 
-        # TODO APOS TODOS PASSAREM PARA A PROXIMA GERAÇÃO, aqueles que nao passaram é pra apagar--->   DONE
-        survivors = [ind["name"] for ind in population]
-        for file in sorted(os.listdir(robot_DIR)):
-            print(file)
-            file_path = os.path.join(robot_DIR, file)
-            # Check if the file is NOT in the list
-            if file not in survivors:
-                print(f"Deleting: {file}")
-                os.remove(file_path)  # delete the file
-            else:
-                print(f"Keeping: {file}")
+        # Copy URDF from robots/
+        urdf_source = os.path.join(robots, f"{base_name}.urdf")
+        urdf_dest = f"{save_path}.urdf"
+        if os.path.exists(urdf_source):
+            shutil.copy2(urdf_source, urdf_dest)
+        else:
+            print(f"[WARNING] URDF not found: {urdf_source}")
+
+        # Copy PKL from vec_paths
+        pkl_source = os.path.join(vec_paths, f"{base_name}.pkl")
+        pkl_dest = f"{save_path}.pkl"
+        if os.path.exists(pkl_source):
+            shutil.copy2(pkl_source, pkl_dest)
+        else:
+            print(f"[WARNING] PKL not found: {pkl_source}")
+
+        # Copy ZIP from brain_paths
+        zip_source = os.path.join(brain_paths, f"{base_name}.zip")
+        zip_dest = f"{save_path}.zip"
+        if os.path.exists(zip_source):
+            shutil.copy2(zip_source, zip_dest)
+        else:
+            print(f"[WARNING] ZIP not found: {zip_source}")
 
         it += 1
+
+    """
+    PLOTTING THE RESULTS
+    """
+    logger.plot_progress_report()
+
+

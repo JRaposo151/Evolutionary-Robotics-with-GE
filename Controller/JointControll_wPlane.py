@@ -11,10 +11,10 @@ def test_joint(joint_index, roboID):
     dt = 1.0 / 240.0  # your sim timestep
     duration = 3.0  # seconds in each direction
 
-    forces = [0.1]
-    velocities = [2, 5, 8, 10]
+    forces = [0.3]
+    velocities = [5]
 
-    for _ in range(1000):
+    for _ in range(500):
         p.stepSimulation()
         time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
 
@@ -89,21 +89,19 @@ p.setAdditionalSearchPath(pybullet_data.getDataPath())
 p.setGravity(0, 0, -9.81)
 startPos = [0, 0, 0.5]
 startOrientation = p.getQuaternionFromEuler([0, 0, 0])
-flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_PARENT
+flags = p.URDF_USE_SELF_COLLISION
 p.loadURDF("plane.urdf")
-p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
 p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
 p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
 
 # Load the robot
-robots = 6
-
-
+robots = 0
 
 # Test each joint one by one
 for i in range(0,1):
 
-    robot_path = f"../robots/robot_{robots}.urdf"
+    robot_path = f"../robots/robot_6.urdf"
     robot_id = p.loadURDF(robot_path, startPos, startOrientation, useFixedBase=False, flags=flags)
 
     # Get number of joints
@@ -111,6 +109,14 @@ for i in range(0,1):
     print(f"::::::::::::::::::::::::NEW ROBOT {robots} TESTING JOINTS::::::::::::::::::::::::")
     print(f"Number of Joints: {num_joints}\n")
 
+    for i in range(p.getNumJoints(robot_id)):
+        joint_info = p.getJointInfo(robot_id, i)
+        link_name = joint_info[12].decode("utf-8")
+
+        # Disable ALL collisions for links that are just visual joints
+        if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+            link_index = joint_info[0]
+            p.setCollisionFilterGroupMask(robot_id, link_index, collisionFilterGroup=0, collisionFilterMask=0)
 
     # Identify Movable Joints
     numJoints = p.getNumJoints(robot_id)

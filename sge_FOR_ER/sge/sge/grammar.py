@@ -1,5 +1,7 @@
 import re
 import random
+from pathlib import Path
+
 from sge_FOR_ER.sge.sge.utilities import ordered_set
 from bigtree import Node
 
@@ -52,6 +54,15 @@ class Grammar:
         """
         if self.grammar_file is None:
             raise Exception("You need to specify the path of the grammar file")
+
+        # Make grammar path absolute relative to this script
+        base_dir = Path(__file__).resolve().parent
+        grammar_path = (base_dir / self.grammar_file).resolve()
+
+        if not grammar_path.is_file():
+            raise FileNotFoundError(f"Grammar file not found: {grammar_path}")
+
+        self.grammar_file = str(grammar_path)
 
         with open(self.grammar_file, "r") as f:
             for line in f:

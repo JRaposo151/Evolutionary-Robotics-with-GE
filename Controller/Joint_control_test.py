@@ -7,8 +7,8 @@ import time
 def test_joint(joint_index, roboID):
     print(f"\nTesting Joint {joint_index}...")
 
-    forces = [5, 10, 20, 30]
-    velocities = [2, 5, 8, 10, 15]
+    forces = [0.5]
+    velocities = [5]
 
     for _ in range(1000):
         p.stepSimulation()
@@ -23,7 +23,7 @@ def test_joint(joint_index, roboID):
         if "continuous" in type_str:
             print("JOINT CONTINUOUS NESTE MOMENTO A MEXER-SE POSITIVAMENTE")
             p.setJointMotorControl2(roboID, joint, p.VELOCITY_CONTROL, force=0.000)
-            p.setJointMotorControl2(roboID, joint, p.TORQUE_CONTROL, force=forces[2])
+            p.setJointMotorControl2(roboID, joint, p.TORQUE_CONTROL, force=forces[0])
         else:
             print("JOINT REVOLUTE NESTE MOMENTO A MEXER-SE POSITIVAMENTE")
             p.setJointMotorControl2(roboID, joint, p.POSITION_CONTROL, targetPosition=0.75, targetVelocity=velocities[0],force=forces[0])  # normal speed is 2.0 radians/s and force is 10
@@ -57,8 +57,8 @@ robots = 1
 # Test each joint one by one
 for i in range(0,robots):
 
-    robot_path = f"../robots/robot_0.urdf"
-    robot_id = p.loadURDF(robot_path, basePosition=[0, 0, 0.5], useFixedBase=True)
+    robot_path = f"../robots/robot_GEN_2_number_33.urdf"
+    robot_id = p.loadURDF(robot_path, basePosition=[0, 0, 0.5], useFixedBase=True, flags=p.URDF_USE_SELF_COLLISION_INCLUDE_PARENT | p.URDF_USE_SELF_COLLISION)
 
     # Get number of joints
     num_joints = p.getNumJoints(robot_id)

@@ -181,7 +181,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.06" radius="0.01" />
+        <cylinder length="0.04" radius="0.009" />
       </geometry>
     </collision>
     <inertial>
@@ -351,7 +351,7 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.06" radius="0.01" />
+        <cylinder length="0.04" radius="0.001" />
       </geometry>
     </collision>
     <inertial>

@@ -47,19 +47,18 @@ velocities = [5]
 
 def URDFRobotEnv_make(ROBOT_URDF_PATH, render):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, 5, 0.5, render=render)
         return env
     return _init
 
 for force in forces:
     for velocity in velocities:
-        print(f"testVandF_roobot{name}_VELO_{velocity}_FORCE_{force}.zip")
-        if not os.path.exists(f"models_PPO_Test/testVandF_robootDEFAULT2{name}_VELO_{velocity}_FORCE_{force}.zip"):
+        if not os.path.exists(f"models_PPO_Test/testVansdF_roboooooooooot{name}_VELO_{velocity}_FORCE_{force}.zip"):
 
             print("------------- ------------- ------------- ------------- ")
             print(f'------------- Training Robot number {name} -------------')
             print("------------- ------------- ------------- ------------- ")
-            ROBOT_URDF_PATH = f"../robots/robot_{name}.urdf"  # ESTE É O ROBO
+            ROBOT_URDF_PATH = f"../robots/robot_GEN_0_number_0.urdf"  # ESTE É O ROBO
 
 
             print(":::::VELOCITY:", velocity)
@@ -67,7 +66,7 @@ for force in forces:
             env = [URDFRobotEnv_make(ROBOT_URDF_PATH, render = False)]
             #env = SubprocVecEnv(env)
             env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
-            env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
+            env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True)
 
             model = PPO(
                     policy='MlpPolicy',
@@ -75,10 +74,9 @@ for force in forces:
                     learning_rate=0.0003,
                     n_steps=2048,
                     batch_size=64,
-                    n_epochs=4,
+                    n_epochs=10,
                     gamma=0.99,
                     gae_lambda=0.95,
-                    ent_coef=0.01,
                     verbose=1,
                     seed=seed
                     )
@@ -88,8 +86,8 @@ for force in forces:
             # turn 0.05 → "0_05", 0.1 → "0_1", 1.0 → "1_0" (or "1" if you prefer)
             force_str = str(force).rstrip('0').rstrip('.')  # e.g. "0.05"→"0.05"; "1.0"→"1"
             force_str = force_str.replace('.', '_')  # e.g. "0.05"→"0_05"
-            model_path = os.path.join(save_folder, f"testVandF_robootDEFAULT2{name}_VELO_{velocity}_FORCE_{force_str}")
+            model_path = os.path.join(save_folder, f"testVandF_robooooooooooot{name}_VELO_{velocity}_FORCE_{force_str}")
             model.save(model_path)
-            model_path = os.path.join(save_folder, f"testVandF_robootDEFAULT2{name}_VELO_{velocity}_FORCE_{force_str}.pkl")
+            model_path = os.path.join(save_folder, f"testVandF_robooooooooooot{name}_VELO_{velocity}_FORCE_{force_str}.pkl")
             env.save(model_path)
             env.close()

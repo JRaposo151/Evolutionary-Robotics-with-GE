@@ -1,10 +1,7 @@
-import random
-import sge_FOR_ER
+from sge_FOR_ER.sge.sge import evolutionary_algorithm
 from pathlib import Path
-from sge_FOR_ER.sge.sge import setup
+from sge_FOR_ER.sge.sge import setup, PPO_train, PPO_TEST
 from sge_FOR_ER.sge.sge.parameters import params
-from sge_FOR_ER.sge.sge.utilities.protected_math import _log_, _div_, _exp_, _inv_, _sqrt_, protdiv
-from numpy import cos, sin
 
 
 def drange(start, stop, step):
@@ -27,26 +24,31 @@ class BostonHousing():
         """
         Train and evaluate a robot using the given individual
         """
-        from Controller import PPO_train, PPO_TEST
+
         # Generate a random “fitness” in [0, 1)
-        PPO_train.train(ROBOT_PATH,name)
+        PPO_train.train(ROBOT_PATH, name)
         fitness = PPO_TEST.test(ROBOT_PATH, name)
         # Package metadata just like before
         info = {
             'generation_RobotNumber': name,
             'test_fitness': fitness
         }
+        print(info)
         return fitness, info
 
 if __name__ == "__main__":
-    path_str = "../parameters/standard.yml"
-    p = Path(path_str)
-    if p.is_file():
-        print(f"✔ Found file: {p.resolve()}")
-    else:
-        print(f"✘ File not found: {p.resolve()}")
+    # Auto-resolve relative to project root
+    project_root = Path(__file__).resolve().parents[1]  # up from examples/Test_Robots.py
+    param_file = project_root / "parameters" / "standard.yml"
 
-    setup("../parameters/standard.yml")
+    # path_str = "../parameters/standard.yml"
+    # p = Path(path_str)
+    if param_file.is_file():
+        print(f"\n✔ Found file: {param_file.resolve()}")
+    else:
+        print(f"\n✘ File not found: {param_file.resolve()}")
+
+    setup(param_file)
     eval_func = BostonHousing(params['RUN'])
-    sge_FOR_ER.sge.sge.evolutionary_algorithm(evaluation_function=eval_func,
-                                              parameters_file="../parameters/standard.yml")
+    evolutionary_algorithm(evaluation_function=eval_func,
+                                              parameters_file=param_file)

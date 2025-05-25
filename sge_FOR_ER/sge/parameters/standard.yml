@@ -1,9 +1,9 @@
-POPSIZE: 100
-GENERATIONS: 50
-ELITISM: 2                    # number of individuals that survive
+POPSIZE: 3
+GENERATIONS: 1
+ELITISM: 1                   # number of individuals that survive
 PROB_CROSSOVER: 1
 PROB_MUTATION: 0
-TSIZE: 3
+TSIZE: 2
 GRAMMAR: '../grammars/robot_grammar.txt'
 EXPERIMENT_NAME: 'dumps/Test'
 RUN: 1
@@ -12,4 +12,4 @@ SAVE_STEP: 1
 VERBOSE: True
 MIN_TREE_DEPTH: 5
 MAX_TREE_DEPTH: 9
-SEED: 80
+SEED: 84
