@@ -4,25 +4,19 @@ channels:
   - pytorch
   - conda-forge
   - defaults
-
 dependencies:
-  - python=3.9
+  - python=3.10
   - pip
-  - numpy
-  - pytorch=2.3.0
-  - torchvision=0.18.1
-  - torchaudio=2.3.0
+  - pytorch=2.2
+  - torchvision
+  - torchaudio
   - pytorch-cuda=12.1
   - gymnasium
-  - stable-baselines3
   - pybullet
   - matplotlib
   - pandas
-  - tqdm
-  - tensorboard
   - pip:
-      - bigtree
+      - stable-baselines3==2.1.0
       - cloudpickle
-      - attrdict
-      - shimmy
+      - tqdm
 
