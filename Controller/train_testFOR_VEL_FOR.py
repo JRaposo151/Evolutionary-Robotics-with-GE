@@ -78,7 +78,8 @@ for force in forces:
                     gamma=0.99,
                     gae_lambda=0.95,
                     verbose=1,
-                    seed=seed
+                    seed=seed,
+                    device= "cuda" if torch.cuda.is_available() else "cpu",
                     )
 
             model.learn(total_timesteps=1000000)

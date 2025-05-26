@@ -57,8 +57,10 @@ def train(PATH, name):
                     gae_lambda=0.95,
                     verbose=1,
                     tensorboard_log="./logs_1/",
-                    seed=seed
-                    )
+                    seed=seed,
+                    device="cuda" if torch.cuda.is_available() else "cpu",
+
+        )
         model.learn(total_timesteps=1000000)
         model.save(model_path)
 
