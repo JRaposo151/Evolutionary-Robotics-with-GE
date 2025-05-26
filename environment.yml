@@ -19,7 +19,6 @@ dependencies:
   - ca-certificates=2025.2.25
   - certifi=2025.1.31
   - charset-normalizer=3.3.2
-  - cudatoolkit=11.8.0
   - cudnn=8.9.2.26
   - cupti=11.8.0
   - expat=2.6.3
