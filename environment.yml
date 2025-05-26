@@ -114,7 +114,7 @@ dependencies:
   - pysocks=1.7.1
   - python=3.9.20
   - pytorch=2.3.0
-  - pytorch-cuda=12.4
+  - pytorch-cuda=12.1
   - pytorch-mutex=1.0
   - pyyaml=6.0.2
   - re2=2022.04.01
