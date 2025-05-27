@@ -161,7 +161,7 @@ class URDFRobotEnv(gym.Env):
             joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32)
         observation = np.hstack(
             [np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position,
-             joint_states_velocity])
+             joint_states_velocity]).astype(np.float32)
         return observation
 
 
