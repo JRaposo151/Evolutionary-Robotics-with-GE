@@ -34,7 +34,7 @@ def test(PATH, name):
         # reward normalization is not needed at test time
         env_vec.norm_reward = False
         model = PPO.load(model_path)
-        n_eval_episodes = 10
+        n_eval_episodes = 3
         episode_rewards = []
         raw_env = env_vec.envs[0]
 

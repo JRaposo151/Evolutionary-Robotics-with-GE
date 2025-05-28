@@ -35,7 +35,7 @@ def make_initial_population():
         yield generate_random_individual()
 
 
-def evaluate(ind, eval_func, name):
+def evaluate(ind, eval_func, name, n_generation):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
     #tree.hshow()
@@ -52,7 +52,7 @@ def evaluate(ind, eval_func, name):
         ind['fitness'] = 0
         ind['fitness'] = float(ind['fitness'])
     else:
-        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}")
+        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation)
         ind['fitness'] = quality
         ind['fitness'] = float(ind['fitness'])
         ind['other_info'] = other_info
@@ -96,24 +96,23 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     while it <= params['GENERATIONS']:
         robot_number = 0
         mutation_rate = it / params['GENERATIONS']
-        crossover_rate = 1 - mutation_rate
+        crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
         for i in tqdm(population):
             name = f"GEN_{it}_number_{robot_number}"
             if i['fitness'] is None:
                 """
                 CONSTRUCTION OF THE POPULATION AND EVALUATION
                 """
-                evaluate(i, evaluation_function, name)
+                evaluate(i, evaluation_function, name, it)
                 robot_number += 1
 
         population.sort(key=lambda x: x['fitness'], reverse=True)
-        #logger.evolution_progress(it, population)
+        logger.evolution_progress(it, population)
 
 
-        # TODO PROCESOS DE SELEÇÂO -> DUVIDA AQUI NESTA SELECAO ????????????????????????????????????????????????????????????????????
         new_population = population[:params['ELITISM']]
-        print(len(new_population))
-        print(params['POPSIZE'])
+        #print(len(new_population))
+        #print(params['POPSIZE'])
         while len(new_population) < params['POPSIZE']:
             name = f"GEN_{it}_number_{robot_number}"
             if random.random() < crossover_rate:
@@ -125,11 +124,10 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
                 ni = tournament(population, params['TSIZE'])
             ni = mutate(ni, mutation_rate)
 
-            evaluate(ni, evaluation_function, name)
+            evaluate(ni, evaluation_function, name, it)
             new_population.append(ni)
 
         new_population.sort(key=lambda x: x['fitness'], reverse=True)
-        #TODO VER SE REALMENTE É NECESSARIO
         logger.evolution_progress(it, new_population)
 
         population = new_population

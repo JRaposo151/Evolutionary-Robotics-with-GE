@@ -13,7 +13,7 @@ def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render):
         return env
     return _init
 
-def train(PATH, name):
+def train(PATH, name, n_generation):
     output_folder_brains = "robots_brains/"
     output_folder_vec = "robots_vec/"
     # Ensure the output folder exists
@@ -43,7 +43,8 @@ def train(PATH, name):
         print('Using device:', 'cuda' if torch.cuda.is_available() else 'cpu', ', device number:',
               torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
-        env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False)]
+        n_envs = 4
+        env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False) for _ in range(n_envs)]
         env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
         env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
         model = PPO(
@@ -61,7 +62,8 @@ def train(PATH, name):
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
-        model.learn(total_timesteps=1000000)
+        total_timesteps = 100000 * n_envs + (50000 * n_generation)
+        model.learn(total_timesteps=total_timesteps)
         model.save(model_path)
 
 
