@@ -91,8 +91,6 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
     it = 0
-
-
     while it <= params['GENERATIONS']:
         robot_number = 0
         mutation_rate = it / params['GENERATIONS']
@@ -108,7 +106,6 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
 
         population.sort(key=lambda x: x['fitness'], reverse=True)
         logger.evolution_progress(it, population)
-
 
         new_population = population[:params['ELITISM']]
         #print(len(new_population))

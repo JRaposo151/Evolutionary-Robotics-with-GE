@@ -86,8 +86,8 @@ class URDFRobotEnv(gym.Env):
 
 
         self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
-        print("\n _____ACTION SPACE_____ \n")
-        print("The Action Space is: ", self.action_space)
+        # print("\n _____ACTION SPACE_____ \n")
+        # print("The Action Space is: ", self.action_space)
 
         # Define Observation Space (Joint Positions + Velocities + Base Position)
         """
@@ -102,8 +102,8 @@ class URDFRobotEnv(gym.Env):
        
         """
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,), dtype=np.float32)
-        print("_____OBSERVATION SPACE_____ \n")
-        print("The State Space is: ", self.observation_space)
+        # print("_____OBSERVATION SPACE_____ \n")
+        # print("The State Space is: ", self.observation_space)
 
         self.stepCounter = 0  # Track steps per episode
         for i in range(p.getNumJoints(self.roboID)):
