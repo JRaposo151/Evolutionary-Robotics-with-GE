@@ -204,7 +204,6 @@ class Grammar:
         depths = [current_depth]
         if current_sym[1] == self.T:
             output.append(current_sym[0])
-            #print(current_sym[0])
             if current_sym[0] == "ε":
                 node_name = f"{node_counter} {current_sym[0]}"
                 node_counter += 1
@@ -227,9 +226,10 @@ class Grammar:
             if current_sym[0] == "<FaceSet>":
                 # print(bodyN)
                 # print(face_counter)
-                # print(f"CUBO {parent.node_name} FACESET {face_counter}")
+                #print(f"CUBO {parent.node_name} FACESET {face_counter}")
                 parent = new_bodies[bodyN]
-                if face_counter == 5 and not (parent.node_name.__contains__("0 body_Link_CUBE")):
+                #print(new_bodies[0].node_name)
+                if face_counter == 5 and not parent.node_name == new_bodies[0].node_name:
                     new_bodies.pop()
                     bodyN -= 1
                     face_counter = 0
@@ -267,7 +267,7 @@ class Grammar:
             for next_sym in next_to_expand:
                 if next_sym[0] == "<FaceSet>":
                     face_counter += 1  # it helps debugging
-                    # print(face_counter)
+                    #print(face_counter)
                     parent = new_bodies[bodyN]
                 elif next_sym[0] == "body_Link_CUBE":
                     bodyN += 1

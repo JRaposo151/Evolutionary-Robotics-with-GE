@@ -23,7 +23,7 @@ def train(PATH, name, n_generation):
     model_path = os.path.join(output_folder_brains, f"{name}.zip")
 
     if not os.path.exists(model_path):
-        seed = 10
+        seed = 42
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
