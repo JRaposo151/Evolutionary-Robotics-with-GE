@@ -47,7 +47,6 @@ def evaluate(ind, eval_func, name, n_generation):
 
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
-
     if not has_movable_joints(ROBOT_PATH):
         ind['fitness'] = 0
         ind['fitness'] = float(ind['fitness'])

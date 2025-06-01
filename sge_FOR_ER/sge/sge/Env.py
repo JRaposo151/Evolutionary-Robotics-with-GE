@@ -150,7 +150,12 @@ class URDFRobotEnv(gym.Env):
 
 
     def _get_observation(self,robot_position,ori):
-        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        try:
+            lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        except Exception as e:
+            print(f"[ERROR] getBaseVelocity failed: {e}")
+            raise RuntimeError("Invalid robot: getBaseVelocity failed — aborting training and assigning fitness 0.0")
+
         # Get new state
         if self.num_movable_joints == 0:
             joint_states_position = np.array([0, 0, 0], dtype=np.float32)  # numero de joints movables

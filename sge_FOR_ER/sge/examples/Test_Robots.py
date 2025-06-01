@@ -1,3 +1,6 @@
+import os
+import shutil
+
 from sge_FOR_ER.sge.sge import evolutionary_algorithm
 from pathlib import Path
 from sge_FOR_ER.sge.sge import setup, PPO_train, PPO_TEST
@@ -26,15 +29,35 @@ class BostonHousing():
         """
 
         # Generate a random “fitness” in [0, 1)
-        PPO_train.train(ROBOT_PATH, name, n_generation)
-        fitness = PPO_TEST.test(ROBOT_PATH, name)
-        # Package metadata just like before
-        info = {
-            'generation_RobotNumber': name,
-            'test_fitness': fitness
-        }
-        print(info)
-        return fitness, info
+        try:
+            PPO_train.train(ROBOT_PATH, name, n_generation)
+            fitness = PPO_TEST.test(ROBOT_PATH, name)
+            # Package metadata just like before
+            info = {
+                'generation_RobotNumber': name,
+                'test_fitness': fitness
+            }
+            print(info)
+            return fitness, info
+
+        except RuntimeError as e:
+            print(f"[EVAL ERROR] Robot {name} failed: {e}")
+            # Save the broken URDF
+            failed_dir = "failed_robots"
+            os.makedirs(failed_dir, exist_ok=True)
+
+            src_path = os.path.join(ROBOT_PATH)
+            dst_path = os.path.join(failed_dir, f"{name}.urdf")
+            if os.path.exists(src_path):
+                shutil.copy(src_path, dst_path)
+                print(f"[SAVED] Broken robot URDF saved to: {dst_path}")
+            else:
+                print(f"[WARN] Could not find URDF to save: {src_path}")
+
+            # Return zero fitness
+            return 0.0, {"error": str(e)}
+
+
 
 if __name__ == "__main__":
     # Auto-resolve relative to project root
