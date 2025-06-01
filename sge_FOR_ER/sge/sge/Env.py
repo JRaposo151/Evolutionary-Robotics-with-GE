@@ -118,6 +118,9 @@ class URDFRobotEnv(gym.Env):
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
+        if getattr(self, 'failed_robot', False):
+            return np.zeros(self.observation_space.shape), 0.0, True, True, {}
+
         self.stepCounter += 1
         if self.render_mode:
             time.sleep(1.0 / 240.0)
@@ -212,7 +215,15 @@ class URDFRobotEnv(gym.Env):
         self.let_robot_fall()
         # Return new observation
         observation = self._get_observation(self.start_position, self.start_orientation)
-        return observation, {}
+        try:
+            # load robot, reset sim, etc.
+            return observation, {}
+        except Exception as e:
+            print(f"[WARN] Env reset failed: {e}")
+            # Mark as failed robot
+            self.failed_robot = True
+            self.episode_done = True
+            return np.zeros(self.observation_space.shape, dtype=np.float32), {}
 
     def let_robot_fall(self, steps=250):
         """ Runs a few simulation steps to let the robot fall naturally. """
