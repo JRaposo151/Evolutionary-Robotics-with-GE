@@ -46,7 +46,7 @@ def train(PATH, name, n_generation):
 
         n_envs = 1
         env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=True) for _ in range(n_envs)]
-        env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
+        env = SubprocVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
         env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
         model = PPO(
                     policy='MlpPolicy',
