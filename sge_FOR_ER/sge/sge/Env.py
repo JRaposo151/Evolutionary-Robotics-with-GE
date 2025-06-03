@@ -159,17 +159,33 @@ class URDFRobotEnv(gym.Env):
             print(f"[ERROR] getBaseVelocity failed: {e}")
             raise RuntimeError("Invalid robot: getBaseVelocity failed — aborting training and assigning fitness 0.0")
 
-        # Get new state
+            # Converta cada pedaço em vetor 1-D:
+        pos_arr = np.array(robot_position, dtype=np.float32).reshape(-1)
+        ori_arr = np.array(ori, dtype=np.float32).reshape(-1)
+        lin_vel_arr = np.array(lin_vel, dtype=np.float32).reshape(-1)
+        ang_vel_arr = np.array(ang_vel, dtype=np.float32).reshape(-1)
+
         if self.num_movable_joints == 0:
-            joint_states_position = np.array([0, 0, 0], dtype=np.float32)  # numero de joints movables
-            joint_states_velocity = np.array([0, 0, 0], dtype=np.float32)
+            joint_states_position = np.zeros(3, dtype=np.float32)
+            joint_states_velocity = np.zeros(3, dtype=np.float32)
         else:
             js = p.getJointStates(self.roboID, self.movable_joints)
-            joint_states_position = np.array([s[0] for s in js], dtype=np.float32)  # numero de joints movables
-            joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32)
-        observation = np.hstack(
-            [np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position,
-             joint_states_velocity]).astype(np.float32)
+            joint_states_position = np.array([s[0] for s in js], dtype=np.float32).reshape(-1)
+            joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32).reshape(-1)
+
+        observation = np.concatenate([
+            pos_arr,
+            ori_arr,
+            lin_vel_arr,
+            ang_vel_arr,
+            joint_states_position,
+            joint_states_velocity
+        ]).astype(np.float32)
+
+        # Garante que nunca é escalar:
+        if observation.ndim == 0:
+            observation = observation.reshape(1)
+
         return observation
 
 
