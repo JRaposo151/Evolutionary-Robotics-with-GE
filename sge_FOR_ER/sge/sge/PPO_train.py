@@ -70,6 +70,7 @@ def train(PATH, name, n_generation):
 
         model_path = os.path.join(output_folder_vec, f"{name}.pkl")
         env.save(model_path)
+        p.disconnect()
         env.close()
 
 

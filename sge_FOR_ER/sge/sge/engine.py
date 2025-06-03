@@ -95,6 +95,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
         mutation_rate = it / params['GENERATIONS']
         crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
         for i in tqdm(population):
+            print(f"\nESTAMOS AGORA NO INDIVIDUOOOOOOOOOOOOO {i}\n" )
             name = f"GEN_{it}_number_{robot_number}"
             if i['fitness'] is None:
                 """

@@ -36,9 +36,9 @@ class URDFRobotEnv(gym.Env):
         self.v = v
         # Connect to PyBullet
         if self.render_mode:
-            p.connect(p.GUI)
+            self.cliente = p.connect(p.GUI)
         else:
-            p.connect(p.DIRECT)
+            self.cliente = p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
@@ -235,12 +235,6 @@ class URDFRobotEnv(gym.Env):
         """ Returns the current robot position. """
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
-
-
-    def close(self):
-        """ Disconnect PyBullet. """
-        p.disconnect()
-
 
 # if __name__ == '__main__':
 #     i = 0
