@@ -20,14 +20,17 @@ class BostonHousing():
         self.has_test_set = has_test_set
 
 
-    def evaluate_robot(self, ROBOT_PATH, name, n_generation):
+    def evaluate_robot(self, ROBOT_PATH, name, n_generation, plane):
         """
         Train and evaluate a robot using the given individual
         """
 
         # Generate a random “fitness” in [0, 1)
-        PPO_train.train(ROBOT_PATH, name, n_generation)
-        fitness = PPO_TEST.test(ROBOT_PATH, name)
+
+        PPO_train.train(ROBOT_PATH, name, n_generation, plane)
+        fitness = PPO_TEST.test(ROBOT_PATH, name, plane)
+
+
         # Package metadata just like before
         info = {
             'generation_RobotNumber': name,

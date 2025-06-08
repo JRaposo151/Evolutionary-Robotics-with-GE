@@ -7,13 +7,13 @@ import pybullet as p
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 
 
-def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render):
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render,plane):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render, plane=plane)
         return env
     return _init
 
-def test(PATH, name):
+def test(PATH, name, plane):
 
     """
     :::::::::::::::::: EVALUATE THE ROBOT AND ITS CONTROLLER ::::::::::::::::::
@@ -27,7 +27,7 @@ def test(PATH, name):
     # Open the file for writing evaluation results
     with open(os.path.join(results_dir, "evaluation_results.txt"), 'w') as f:
         f.write("Evaluation Results:\n\n")
-        env = DummyVecEnv([URDFRobotEnv_make(PATH, velocity=5, force=0.5,  render=False)])
+        env = DummyVecEnv([URDFRobotEnv_make(PATH, velocity=5, force=0.5,  render=False, plane=plane)])
         env_vec = VecNormalize.load(vec_path, env)
         #  do not update them at test time
         env_vec.training = False

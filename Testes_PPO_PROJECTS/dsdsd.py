@@ -7,9 +7,9 @@ import TESTE_PPO_DOG
 
 
 if __name__ == "__main__":
-    #TestCar_TORQUE.torque()
+    TestCar_TORQUE.torque()
     # TESTE_PPO_DOG.position()
-    TestDog_TORQUE_4ENV.velocity() # obs e reward linha 190, linha 193
+    #TestDog_TORQUE_4ENV.velocity() # obs e reward linha 190, linha 193
     #Test_DOG_1ENV.velocity() # tem 53 no obs
     # Test_DOG_NEW_REWARD.velocity() # linha26,
 

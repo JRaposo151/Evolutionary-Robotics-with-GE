@@ -6,11 +6,13 @@ import pybullet as p
 import pybullet_data
 import torch
 from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import VecNormalize, SubprocVecEnv
+
 
 class LaikagoEnv(gym.Env):
     def __init__(self,
                  path,
-                 render=True):
+                 render=False):
 
         super(LaikagoEnv, self).__init__()
         self.flags = p.URDF_USE_SELF_COLLISION
@@ -36,7 +38,28 @@ class LaikagoEnv(gym.Env):
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
 
         p.setGravity(0, 0, -9.8)
-        p.loadURDF("plane.urdf")
+        heightData = np.loadtxt("terrain_data.csv", delimiter=',')
+        terrainSize = 256  # Assuming the terrain is 256x256
+        heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+
+        # Create the terrain shape
+        terrainShape = p.createCollisionShape(
+            shapeType=p.GEOM_HEIGHTFIELD,
+            meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+            heightfieldTextureScaling=terrainSize / 2,
+            heightfieldData=heightfieldData,
+            numHeightfieldRows=terrainSize,
+            numHeightfieldColumns=terrainSize
+        )
+
+        # Create the terrain object
+        terrainId = p.createMultiBody(0, terrainShape)
+        p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+        p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+
+        # Set the friction coefficient of the terrain
+        p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+
         useFixedBase = False
 
         self.ori = [0, 0, 0.1, 0]
@@ -88,13 +111,13 @@ class LaikagoEnv(gym.Env):
         self.pos = pos
 
         reward = distance_traveled  # Encourage forward motion
-        print("Reward:",reward)
+        #print("Reward:",reward)
         # Check if robot has fallen
 
         terminated = False
         truncated = False
         # Penalize falling
-        if self.counter == 4800 or self.pos[2] < -0.1:
+        if self.counter == 4800:
             self.counter = 0
             terminated = True
         return obs, reward, terminated, truncated, {}
@@ -102,9 +125,29 @@ class LaikagoEnv(gym.Env):
     def reset(self, **kwargs):
         p.resetSimulation()
         p.setGravity(0, 0, -9.8)
-        p.loadURDF("plane.urdf")
-        useFixedBase = False
-        self.robot = p.loadURDF(self.path, [0, 0, 0.1], self.ori, useFixedBase=useFixedBase, flags=self.flags)
+        heightData = np.loadtxt("terrain_data.csv", delimiter=',')
+        terrainSize = 256  # Assuming the terrain is 256x256
+        heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+
+        # Create the terrain shape
+        terrainShape = p.createCollisionShape(
+            shapeType=p.GEOM_HEIGHTFIELD,
+            meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+            heightfieldTextureScaling=terrainSize / 2,
+            heightfieldData=heightfieldData,
+            numHeightfieldRows=terrainSize,
+            numHeightfieldColumns=terrainSize
+        )
+
+        # Create the terrain object
+        terrainId = p.createMultiBody(0, terrainShape)
+        p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+        p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+
+        # Set the friction coefficient of the terrain
+        p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+
+        self.robot = p.loadURDF(self.path, [0, 0, 0.1], self.ori, useFixedBase=False, flags=self.flags)
         self.let_robot_fall()
 
         obs = self._get_observation()
@@ -157,75 +200,66 @@ def torque():
           torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
 # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
-    if not os.path.exists(f"ppo_husky_TORQUE_CONTROL.zip"):
+    if not os.path.exists(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN.zip"):
         # Train the PPO model on this environment
-        from stable_baselines3.common.vec_env import SubprocVecEnv
+
 
         # Number of environments you want to train in parallel
         n_envs = 4
-
         # Create multiple environments using your factory
-        env_fns = [make_husky_env(path, render=True) for _ in range(n_envs)]
+        env_fns = [make_husky_env(path, render=False) for _ in range(n_envs)]
         vec_env = SubprocVecEnv(env_fns)  # Or use DummyVecEnv if you have debugging needs
+        env = VecNormalize(vec_env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
         model = PPO(policy='MlpPolicy',
                             env=vec_env,
-                            learning_rate=3e-4,
+                            learning_rate=0.0003,
                             n_steps=2048,
                             batch_size=64,
-                            n_epochs=4,
-                            gamma=0.999,
-                            gae_lambda=0.98,
-                            ent_coef=0.01,
+                            n_epochs=10,
+                            gamma=0.99,
+                            gae_lambda=0.95,
                             verbose=1,
+                            tensorboard_log="./logs_2/",
                             seed=seed,
-                            tensorboard_log="./logs_1/"
                             )
-        model.learn(total_timesteps=300000)
+        model.learn(total_timesteps=500000)
         # Save the trained model
-        model.save(f"ppo_husky_TORQUE_CONTROL")
+        model.save(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN")
         print(f"CAR Trained")
-        vec_env.close()
+        env.save("ppo_husky_TORQUE_CONTROL_NEWTERRAIN.pkl")
+        env.close()
 # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
 
 
 
 # --------------------- Testing/Visualization Phase ------------------------
     with open("Results3.txt", "w") as file:
-        model = PPO.load(f"ppo_husky_TORQUE_CONTROL")
-        test_env = LaikagoEnv(path, render=True)
-
+        model = PPO.load(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN")
+        test_env = [make_husky_env(path, render=True) for _ in range(1)]
+        test_env = SubprocVecEnv(test_env)  # Or use DummyVecEnv if you have debugging needs
+        test_env = VecNormalize.load("ppo_husky_TORQUE_CONTROL_NEWTERRAIN.pkl", test_env)
+        #  do not update them at test time
+        test_env.training = False
+        # reward normalization is not needed at test time
+        test_env.norm_reward = False
         # Testing loop: run several episodes and record rewards
         episode_rewards = []
         total_reward = 0
         num_episodes = 0
-        obs, _ = test_env.reset()
+        obs = test_env.reset()
         # Run a fixed number of simulation steps
 
         for _ in range(4800):
+
             action, _ = model.predict(obs, deterministic=False)
-            obs, reward, terminated, truncated, _ = test_env.step(action)
+            obs, reward, terminated, _ = test_env.step(action)
             total_reward += reward
-            if terminated or truncated:
+            if terminated:
                 episode_rewards.append(reward)
                 num_episodes += 1
-                print(f"Episode {num_episodes} reward: {reward:.2f}")
-                obs, _ = test_env.reset()
+                print(f"Episode {num_episodes} reward: {reward[0]:.2f}")
+                obs = test_env.reset()
                 break
 
 
         test_env.close()
-
-        # Compute and save statistics
-        robot_name = f"ppo_husky_TORQUE_CONTROL"
-        if episode_rewards:
-            mean_reward = np.mean(episode_rewards)
-            std_reward = np.std(episode_rewards)
-            print("Mean reward:", total_reward)
-            #print("Std reward:", std_reward)
-
-            # Write results to file
-            #file.write(
-                #f"{robot_name}, Mean Reward: {mean_reward:.2f}, Std Reward: {std_reward:.2f}\n")
-        else:
-            print("No episodes completed.")
-            file.write(f"{robot_name}, No episodes completed.\n")

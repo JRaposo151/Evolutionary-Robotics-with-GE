@@ -8,13 +8,13 @@ import numpy as np
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv, SubprocVecEnv
 
 
-def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render):
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render, plane):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, plane, render=render)
         return env
     return _init
 
-def train(PATH, name, n_generation):
+def train(PATH, name, n_generation, plane):
     output_folder_brains = "robots_brains/"
     output_folder_vec = "robots_vec/"
     # Ensure the output folder exists
@@ -23,7 +23,7 @@ def train(PATH, name, n_generation):
     model_path = os.path.join(output_folder_brains, f"{name}.zip")
 
     if not os.path.exists(model_path):
-        seed = 42
+        seed = 10
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
@@ -45,8 +45,8 @@ def train(PATH, name, n_generation):
               torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
         n_envs = 4
-        env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False) for _ in range(n_envs)]
-        env = SubprocVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
+        env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False, plane=plane) for _ in range(n_envs)]
+        env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
         env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
         model = PPO(
                     policy='MlpPolicy',
@@ -70,6 +70,7 @@ def train(PATH, name, n_generation):
 
         model_path = os.path.join(output_folder_vec, f"{name}.pkl")
         env.save(model_path)
+        p.disconnect()
         env.close()
 
 

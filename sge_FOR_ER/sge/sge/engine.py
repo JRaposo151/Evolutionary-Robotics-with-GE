@@ -44,7 +44,7 @@ def evaluate(ind, eval_func, name, n_generation):
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
-
+    plane = 1                       # here is to switch between planes: horizontal or mountains
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
 
@@ -52,7 +52,7 @@ def evaluate(ind, eval_func, name, n_generation):
         ind['fitness'] = 0
         ind['fitness'] = float(ind['fitness'])
     else:
-        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation)
+        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane)
         ind['fitness'] = quality
         ind['fitness'] = float(ind['fitness'])
         ind['other_info'] = other_info
