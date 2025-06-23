@@ -30,7 +30,7 @@
     <joint name="joint_1" type="fixed">
     <parent link="a"/>
     <child link="limb_link"/>
-    <origin xyz="0 0 0.022" rpy="0 0 3.15"/>
+    <origin xyz="0 0 0.025" rpy="0 0 3.15"/>
   </joint>
 
 
