@@ -81,9 +81,12 @@ def has_movable_joints(robot_path):
     joints = p.getNumJoints(robot)
     movable_joints = [
         j for j in range(joints)
-        if p.getJointInfo(robot, j)[2] in [4]]
+        if p.getJointInfo(robot, j)[2] in [0]]
     p.disconnect()
+    print(len(movable_joints))
     return len(movable_joints) > 0
+
+
 
 def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_DIR = "../examples/robots"
