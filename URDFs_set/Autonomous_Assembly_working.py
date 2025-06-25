@@ -288,6 +288,12 @@ def assemblement(robot_tree, robot_number):
     robot = ET.Element("robot", name=f"combined_robot_{robot_number}")
 
     for node in preorder_iter(robot_tree):
+        # if we’re in “skip mode” and still below the skip depth, keep skipping
+        if skip_until_depth is not None and node.depth > skip_until_depth:
+            continue
+        if skip_until_depth is not None and node.depth <= skip_until_depth:
+            skip_until_depth = None
+
         # for each node in the tree, it will be add to the robot file a component
         testing_robot = "robot_working.urdf"
         output_file = f"robot_{robot_number}.urdf"  # Modified URDF for each iteration
@@ -341,11 +347,13 @@ def assemblement(robot_tree, robot_number):
                         root, direction = treeFunction(input_file_sphereAUX)
                     else:
                         faceSet_Covered[cube].append(direction.split(".urdf")[0])
+                        direction_occupied = direction.split(".urdf")[0]
                         break
                 robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
                 joints = node.node_name.split(" ")
                 root, direction = treeFunction([joints[-1] + ".urdf"])
-                robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere, faceSet_Covered.get(cube, [])[-1], joint, root)
+                robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere,
+                                                      faceSet_Covered.get(cube, [])[-1], joint, root)
                 sphere.sphere_N += 1
                 extra_sphere.Extra_N += 1
 
@@ -354,9 +362,11 @@ def assemblement(robot_tree, robot_number):
                 root, direction = treeFunction([joints[-1] + ".urdf"])
 
                 if node.parent.node_name.__contains__("wheel"):
-                    robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere, "", joint, root)
+                    robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere, "",
+                                                          joint, root)
                 else:
-                    robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name, blackSphere, "", joint, root)
+                    robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name,
+                                                          blackSphere, "", joint, root)
                 extra_sphere.Extra_N += 1
 
         ## HERE IS THE LIMB CONSTRUCTION
@@ -371,6 +381,16 @@ def assemblement(robot_tree, robot_number):
             root, direction = treeFunction([limb[-1] + ".urdf"])
             robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
 
+        elif node.node_name.__contains__("ε") and node.parent.node_name == "0 body_Link_CUBE":
+            cube = node.parent.node_name
+            root, direction = treeFunction(input_file_sphereAUX)
+            while True:
+                if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
+                    root, direction = treeFunction(input_file_sphereAUX)
+                else:
+                    faceSet_Covered[cube].append(direction.split(".urdf")[0])
+                    direction_occupied = direction.split(".urdf")[0]
+                    break
 
         if not node.node_name == "0 ROOT" and not node.node_name.__contains__("joint"):
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
@@ -395,8 +415,8 @@ def assemblement(robot_tree, robot_number):
                 p.setGravity(0, 0, -9.8)
 
             robotID = p.loadURDF(output_path,
-                                  useFixedBase=True,
-                                  flags=p.URDF_USE_SELF_COLLISION)
+                                 useFixedBase=True,
+                                 flags=p.URDF_USE_SELF_COLLISION)
             print(f"Loaded robot #{robot_number} into PyBullet (ID = {robotID})")
             link_names = {}
             num_joints = p.getNumJoints(robotID)
@@ -425,13 +445,13 @@ def assemblement(robot_tree, robot_number):
             contacts = p.getContactPoints(bodyA=robotID, bodyB=robotID)
             if contacts:
                 collision_found = True
+                skip_until_depth = node.depth
                 print(f"⚠️ Self-collision detected:")
                 for c in contacts:
                     a, b = c[3], c[4]
                     nameA = link_names.get(a, f"<unknown:{a}>")
                     nameB = link_names.get(b, f"<unknown:{b}>")
                     print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
-                break
 
             if not collision_found:
                 print("✅ No self-collisions detected in the test interval.")
@@ -448,9 +468,7 @@ def assemblement(robot_tree, robot_number):
             except OSError as e:
                 print(f"Warning: could not delete {output_path}: {e}")
 
-
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
-
 
     # Save the modified URDF to a new file
     tree = ET.ElementTree(robot)
@@ -462,14 +480,8 @@ def assemblement(robot_tree, robot_number):
 
     # Full path to save
     output_file = os.path.join(output_folder, output_file)
-    shutil.copyfile(committed_path, output_file)
-    try:
-        os.remove(output_path)
-        print(f"Deleted temporary URDF file: {output_path}")
-    except OSError as e:
-        print(f"Already deleted temporary URDF file: {output_path}")
-    os.remove(committed_path)
 
+    tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Done, robot {robot_number} constructed and ready to train")
     print("--------------------------------------------")
 
