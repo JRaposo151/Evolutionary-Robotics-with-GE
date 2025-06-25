@@ -4,7 +4,7 @@ ELITISM: 1                   # number of individuals that survive
 PROB_CROSSOVER: 1
 PROB_MUTATION: 0
 TSIZE: 2
-GRAMMAR: '../grammars/robot_grammar.txt'
+GRAMMAR: '../grammars/robot_grammar_simetric.txt'
 EXPERIMENT_NAME: 'dumps/Test'
 RUN: 1
 INCLUDE_GENOTYPE: True

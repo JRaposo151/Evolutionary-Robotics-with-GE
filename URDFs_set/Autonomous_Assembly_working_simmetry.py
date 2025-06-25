@@ -265,6 +265,14 @@ def limbs(robot, blackSphere, limb, extra_sphere, joint, root):
 
 
 
+
+def apply_simmetry():
+
+    return output_file
+
+
+
+
 def assemblement(robot_tree, robot_number):
 
 
@@ -307,6 +315,8 @@ def assemblement(robot_tree, robot_number):
             root, direction = treeFunction(input_file_body)  # in this case, the direction doesn t matter
             robot = body(robot, node.node_name, root)
             faceSet_Covered[node.node_name] = []
+            if node.node_name == "0 body_Link_CUBE":
+                faceSet_Covered["0 body_Link_CUBE"].append("BACK")
             if node.parent.node_name.__contains__("B_joint"):
                 cube = node.node_name
                 if direction_occupied == "LEFT":
@@ -483,6 +493,7 @@ def assemblement(robot_tree, robot_number):
     for direction in directions:
         print(direction)
 
+    apply_simmetry()
     tree = ET.ElementTree(robot)
     ET.indent(tree, space="\t")
     ET.indent(tree, space="  ", level=0)

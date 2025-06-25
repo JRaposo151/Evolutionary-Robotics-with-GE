@@ -19,8 +19,7 @@ from sge_FOR_ER.sge.sge.parameters import (
     set_parameters,
     load_parameters
 )
-from URDFs_set import Autonomous_Assembly_working
-
+from URDFs_set import Autonomous_Assembly_working, Autonomous_Assembly_working_simmetry
 
 
 def generate_random_individual():
@@ -38,13 +37,14 @@ def make_initial_population():
 def evaluate(ind, eval_func, name, n_generation):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
-    #tree.hshow()
+    tree.hshow()
     """AQUI CONSTRUIR O ROBO COM AS TREES"""
-    Autonomous_Assembly_working.assemblement(tree, name)
+    #Autonomous_Assembly_working.assemblement(tree, name)
+    Autonomous_Assembly_working_simmetry.assemblement(tree, name)
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
-    plane = 1                       # here is to switch between planes: horizontal or mountains
+    plane = 0                       # here is to switch between planes: horizontal or mountains
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
 
@@ -90,7 +90,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_DIR = "../examples/robots"
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
-    it = 0
+    it = 4
     while it <= params['GENERATIONS']:
         robot_number = 0
         mutation_rate = it / params['GENERATIONS']

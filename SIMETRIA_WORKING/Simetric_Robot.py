@@ -1,8 +1,5 @@
 import random
-from copy import deepcopy
-
 from bigtree import Node
-
 random.seed(82)
 
 
@@ -12,8 +9,7 @@ random.seed(82)
 grammar = {
     "<start>": ["<BodyStructure>"],
     # Each face represents one side of the cube. Only 5 here because one can be seen as the face/head of the robot
-    "<BodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
-    "<NewBodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
+    "<BodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
 
     # Each face set can be empty or be directed for a new extension: a new body link or new limbs
     "<FaceSet>": [
@@ -27,7 +23,7 @@ grammar = {
     ],
 
     # This rules will have the objective to increase the body structure
-    "<BodyExtension>": ["<B_Joint> <NewBodyStructure>"],
+    "<BodyExtension>": ["<B_Joint> <BodyStructure>"],
 
     # This rules and the next two will have the objective to add limbs and increase the total size of each one
     "<LimbChain>": ["<LimbAttachment> <LimbExtension>"],
@@ -64,23 +60,6 @@ MAX_DEPTH = 8
 node_counter = 0  # Global counter to give unique IDs to nodes
 tree = Node(f"{node_counter} ROOT")  # Global tree structure
 parent = tree
-
-
-def mirror_half_body(half_tree):
-    full = deepcopy(half_tree)
-    for node in half_tree.traverse():
-        x, y, z = node.pose.position
-        # keep only the +X (or ≥0) modules
-        if x <= 0 and not node.is_core():
-            continue
-        clone = deepcopy(node)
-        # flip the X coordinate
-        clone.pose.position = (-x, y, z)
-        # mirror the joint axis/orientation as needed...
-        clone.pose.rotation  = mirror_rotation(node.pose.rotation)
-        # attach into `full` under the mirrored parent
-        full.attach(clone, parent=mirror_of(node.parent))
-    return full
 
 
 def expand(symbol, depth, bodyN, new_bodies):
@@ -167,7 +146,6 @@ def generate_robot():
     node_counter += 1
     new_bodies = []
     final_output = expand("<start>", 0, -1, new_bodies)
-    tree = mirror_half_body(tree)
     return final_output, tree
 
 
