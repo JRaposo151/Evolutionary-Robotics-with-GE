@@ -1,8 +1,12 @@
 import os
 import random
+import shutil
 import xml.etree.ElementTree as ET
+
+import pybullet_data
 from bigtree import preorder_iter
 from pathlib import Path
+import pybullet as p
 
 class SphereCounter:
     def __init__(self):
@@ -285,6 +289,7 @@ def assemblement(robot_tree, robot_number):
 
     for node in preorder_iter(robot_tree):
         # for each node in the tree, it will be add to the robot file a component
+        testing_robot = "robot_working.urdf"
         output_file = f"robot_{robot_number}.urdf"  # Modified URDF for each iteration
 
         ## HERE IS THE BODY CONSTRUCTION
@@ -365,6 +370,84 @@ def assemblement(robot_tree, robot_number):
             limb = node.node_name.split(" ")
             root, direction = treeFunction([limb[-1] + ".urdf"])
             robot = limbs(robot, blackSphere, node.node_name, extra_sphere, joint, root)
+
+        if not node.node_name == "0 ROOT" and not node.node_name.__contains__("joint"):
+            """ CHECK IF THERE ARE ANY COLISION BETWEEN """
+            # --- 1. Save URDF to disk ---
+
+            tree = ET.ElementTree(robot)
+            ET.indent(tree, space="\t")
+            ET.indent(tree, space="  ", level=0)
+            output_folder = "robots_test/"
+            os.makedirs(output_folder, exist_ok=True)
+            output_path = os.path.join(output_folder, testing_robot)
+            committed_path = "robots_test/robot_committed.urdf"
+            # indent nicely
+            ET.indent(tree, space="  ")
+            tree.write(output_path, encoding="utf-8", xml_declaration=True)
+            print(f"Saved temporary URDF to {output_path}")
+
+            # --- 2. Load into PyBullet ---
+            if not p.isConnected():
+                p.connect(p.DIRECT)  # or p.GUI
+                p.setAdditionalSearchPath(pybullet_data.getDataPath())
+                p.setGravity(0, 0, -9.8)
+
+            robotID = p.loadURDF(output_path,
+                                 useFixedBase=True,
+                                 flags=p.URDF_USE_SELF_COLLISION)
+            print(f"Loaded robot #{robot_number} into PyBullet (ID = {robotID})")
+            link_names = {}
+            num_joints = p.getNumJoints(robotID)
+            body_info = p.getBodyInfo(robotID)
+            base_name = body_info[0].decode('utf‑8')
+            link_names[-1] = base_name
+            for j in range(num_joints):
+                info = p.getJointInfo(robotID, j)
+                # info[0] = joint index, info[12] = link name (as bytes)
+                link_index = info[0]
+                link_name = info[12].decode('utf‑8')
+                link_names[link_index] = link_name
+
+            for i in range(p.getNumJoints(robotID)):
+                joint_info = p.getJointInfo(robotID, i)
+                link_name = joint_info[12].decode("utf-8")
+
+                # Disable ALL collisions for links that are just visual joints
+                if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                    link_index = joint_info[0]
+                    p.setCollisionFilterGroupMask(robotID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
+
+            # --- 3. Simple collision test loop ---
+            collision_found = False
+            p.stepSimulation()
+            contacts = p.getContactPoints(bodyA=robotID, bodyB=robotID)
+            if contacts:
+                collision_found = True
+                print(f"⚠️ Self-collision detected:")
+                for c in contacts:
+                    a, b = c[3], c[4]
+                    nameA = link_names.get(a, f"<unknown:{a}>")
+                    nameB = link_names.get(b, f"<unknown:{b}>")
+                    print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
+                break
+
+            if not collision_found:
+                print("✅ No self-collisions detected in the test interval.")
+                shutil.copyfile(output_path, committed_path)  # Promote working → committed
+
+            # --- 4. Cleanup ---
+            p.removeBody(robotID)
+            print(f"Removed robot {robotID} from PyBullet.")
+            p.disconnect()
+
+            try:
+                os.remove(output_path)
+                print(f"Deleted temporary URDF file: {output_path}")
+            except OSError as e:
+                print(f"Warning: could not delete {output_path}: {e}")
+
+            """ CHECK IF THERE ARE ANY COLISION BETWEEN """
 
     # Save the modified URDF to a new file
     tree = ET.ElementTree(robot)
