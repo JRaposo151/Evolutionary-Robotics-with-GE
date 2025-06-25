@@ -286,7 +286,8 @@ def assemblement(robot_tree, robot_number):
     # Robot file creation
     print(f"Robot number: {robot_number} being assembled...")
     robot = ET.Element("robot", name=f"combined_robot_{robot_number}")
-
+    skip_until_depth = None
+    
     for node in preorder_iter(robot_tree):
         # if we’re in “skip mode” and still below the skip depth, keep skipping
         if skip_until_depth is not None and node.depth > skip_until_depth:
