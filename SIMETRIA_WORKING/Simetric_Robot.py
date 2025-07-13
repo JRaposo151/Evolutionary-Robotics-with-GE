@@ -74,6 +74,7 @@ def expand(symbol, depth, bodyN, new_bodies):
     global node_counter, tree, parent
     face_counter = 0
 
+
     # If symbol is terminal (does not start with "<"), return it.
     if not symbol.startswith("<") or symbol not in grammar:
         if symbol != "body_Link_CUBE":
@@ -83,10 +84,10 @@ def expand(symbol, depth, bodyN, new_bodies):
             parent = new_parent
         else:
             node_name = f"{node_counter} {symbol}"
-            node_counter += 1
             new_parent = Node(node_name, parent=parent)
             parent = new_parent
             new_bodies.append(new_parent)
+            node_counter += 1
         return symbol
 
     # If we have reached max depth and the symbol is any of the non-terminal, force terminal production.
@@ -137,13 +138,12 @@ def generate_robot():
     Generate a complete URDF fragment from the grammar.
     """
     global node_counter, tree, parent
-    # Reset globals for each run:
     node_counter = 0
+    # Reset globals for each run:
     tree = Node("0 ROOT")  # fresh tree with new root
     parent = tree
 
 
-    node_counter += 1
     new_bodies = []
     final_output = expand("<start>", 0, -1, new_bodies)
     return final_output, tree

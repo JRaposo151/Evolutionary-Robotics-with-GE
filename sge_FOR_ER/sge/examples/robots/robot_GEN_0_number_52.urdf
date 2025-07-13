@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="combined_robot_GEN_0_number_52">
+  <link name="0 body_Link_CUBE">
+    <visual>
+      <geometry>
+        <box size="0.046 0.046 0.046" />
+      </geometry>
+      <material name="red">
+        <color rgba="1.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.046 0.046 0.046" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1" />
+      <inertia ixx="0.0000353" ixy="0.0" ixz="0.0" iyy="0.0000353" iyz="0.0" izz="0.0000353" />
+    </inertial>
+  </link>
+  <joint name="joint_0" type="fixed">
+    <parent link="0 body_Link_CUBE" />
+    <child link="Sphere_0" />
+    <origin xyz="0 0 0.023" rpy="0 0 0" />
+  </joint>
+  <link name="Sphere_0">
+    <visual>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.004" />
+      <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
+    </inertial>
+  </link>
+  <joint name="joint_1" type="continuous">
+    <parent link="Sphere_0" />
+    <child link="1 L_joint_continuous" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit effort="1.0" velocity="1.0" rpy="0 3.15 0" />
+  </joint>
+  <link name="1 L_joint_continuous">
+    <visual>
+      <geometry>
+        <cylinder length="0.04" radius="0.02" />
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.04" radius="0.02" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" />
+      <inertia ixx="7.5e-06" ixy="0.0" ixz="0.0" iyy="7.5e-06" iyz="0.0" izz="7.5e-06" />
+    </inertial>
+  </link>
+  <joint name="joint_2" type="fixed">
+    <parent link="1 L_joint_continuous" />
+    <child link="blackSphere_0" />
+    <origin xyz="0 0 0.02" rpy="0 0 0" />
+  </joint>
+  <link name="blackSphere_0">
+    <visual>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 55.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.004" />
+      <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
+    </inertial>
+  </link>
+  <joint name="joint_3" type="fixed">
+    <parent link="blackSphere_0" />
+    <child link="2 limb_Link_Small" />
+    <origin xyz="0 0 0.022" rpy="0 0 3.15" />
+  </joint>
+  <link name="2 limb_Link_Small">
+    <visual>
+      <geometry>
+        <cylinder length="0.045" radius="0.015" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.045" radius="0.015" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" />
+      <inertia ixx="6.875e-06" ixy="0.0" ixz="0.0" iyy="6.875e-06" iyz="0.0" izz="5.625e-06" />
+    </inertial>
+  </link>
+  <joint name="joint_4" type="fixed">
+    <parent link="2 limb_Link_Small" />
+    <child link="extra_sphere_1" />
+    <origin xyz="0 0 0.02" rpy="0 0 0" />
+  </joint>
+  <link name="extra_sphere_1">
+    <visual>
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.006" />
+      <inertia ixx="0.00098" ixy="0.0" ixz="0.0" iyy="0.00098" iyz="0.0" izz="0.00098" />
+    </inertial>
+  </link>
+  <joint name="joint_5" type="fixed">
+    <parent link="extra_sphere_1" />
+    <child link="3 L_joint_fixed" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+  <link name="3 L_joint_fixed">
+    <visual>
+      <geometry>
+        <box size="0.03 0.03 0.03" />
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.03 0.03 0.03" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" />
+      <inertia ixx="7.5e-06" ixy="0.0" ixz="0.0" iyy="7.5e-06" iyz="0.0" izz="7.5e-06" />
+    </inertial>
+  </link>
+  <joint name="joint_6" type="fixed">
+    <parent link="3 L_joint_fixed" />
+    <child link="blackSphere_1" />
+    <origin xyz="0 0 0.01" rpy="0 0 0" />
+  </joint>
+  <link name="blackSphere_1">
+    <visual>
+      <geometry>
+        <cylinder length="0.04" radius="0.009" />
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.04" radius="0.009" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.065" />
+      <inertia ixx="0.0025" ixy="0.0" ixz="0.0" iyy="0.0025" iyz="0.0" izz="0.0025" />
+    </inertial>
+  </link>
+  <joint name="joint_7" type="fixed">
+    <parent link="blackSphere_1" />
+    <child link="4 wheel_link" />
+    <origin xyz="0 0 0.02" rpy="0 0 0" />
+  </joint>
+  <link name="4 wheel_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.012" radius="0.033" />
+      </geometry>
+      <material name="green">
+        <color rgba="0.0 1.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.012" radius="0.033" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.065" />
+      <inertia ixx="0.00001848" ixy="0.0" ixz="0.0" iyy="0.00001848" iyz="0.0" izz="0.00003539" />
+    </inertial>
+  </link>
+  <joint name="joint_8" type="fixed">
+    <parent link="0 body_Link_CUBE" />
+    <child link="Sphere_1" />
+    <origin xyz="0 0.023 0" rpy="0 0 0" />
+  </joint>
+  <link name="Sphere_1">
+    <visual>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.004" />
+      <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
+    </inertial>
+  </link>
+  <joint name="joint_9" type="continuous">
+    <parent link="Sphere_1" />
+    <child link="6 L_joint_continuous_horizontal" />
+    <origin xyz="0 0.02 0" rpy="-1.55 0 0" />
+    <axis xyz="0 0 1" rpy="-1.55 0 0" />
+    <limit effort="1.0" velocity="1.0" rpy="-1.55 0 0" />
+  </joint>
+  <link name="6 L_joint_continuous_horizontal">
+    <visual>
+      <geometry>
+        <cylinder length="0.04" radius="0.02" />
+      </geometry>
+      <material name="black">
+        <color rgba="0.0 0.0 0.0 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.04" radius="0.02" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" />
+      <inertia ixx="7.5e-06" ixy="0.0" ixz="0.0" iyy="7.5e-06" iyz="0.0" izz="7.5e-06" />
+    </inertial>
+  </link>
+  <joint name="joint_10" type="fixed">
+    <parent link="6 L_joint_continuous_horizontal" />
+    <child link="blackSphere_2" />
+    <origin xyz="0.02 0 0.015" rpy="0 1.6 0" />
+  </joint>
+  <link name="blackSphere_2">
+    <visual>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 55.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.01" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.004" />
+      <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
+    </inertial>
+  </link>
+  <joint name="joint_14" type="fixed">
+    <parent link="blackSphere_2" />
+    <child link="7 limb_Link_Small" />
+    <origin xyz="0 0 0.022" rpy="0 0 3.15" />
+  </joint>
+  <link name="7 limb_Link_Small">
+    <visual>
+      <geometry>
+        <cylinder length="0.045" radius="0.015" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.045" radius="0.015" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05" />
+      <inertia ixx="6.875e-06" ixy="0.0" ixz="0.0" iyy="6.875e-06" iyz="0.0" izz="5.625e-06" />
+    </inertial>
+  </link>
+  <joint name="joint_15" type="fixed">
+    <parent link="7 limb_Link_Small" />
+    <child link="extra_sphere_3" />
+    <origin xyz="0 0 0.02" rpy="0 0 0" />
+  </joint>
+  <link name="extra_sphere_3">
+    <visual>
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.0 0.0 0.8 1.0" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.015" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.006" />
+      <inertia ixx="0.00098" ixy="0.0" ixz="0.0" iyy="0.00098" iyz="0.0" izz="0.00098" />
+    </inertial>
+  </link>
+</robot>

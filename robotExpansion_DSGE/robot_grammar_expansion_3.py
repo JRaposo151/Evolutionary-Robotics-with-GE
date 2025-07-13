@@ -10,7 +10,7 @@ random.seed(82)
 grammar = {
     "<start>": ["<BodyStructure>"],
     # Each face represents one side of the cube. Only 5 here because one can be seen as the face/head of the robot
-    "<BodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
+    "<BodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
     "<NewBodyStructure>": ["body_Link_CUBE <FaceSet> <FaceSet> <FaceSet> <FaceSet> <FaceSet>"],
 
     # Each face set can be empty or be directed for a new extension: a new body link or new limbs

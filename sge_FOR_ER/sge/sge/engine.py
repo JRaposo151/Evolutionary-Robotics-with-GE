@@ -52,10 +52,10 @@ def evaluate(ind, eval_func, name, n_generation):
         ind['fitness'] = 0
         ind['fitness'] = float(ind['fitness'])
     else:
-        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane)
-        ind['fitness'] = quality
-        ind['fitness'] = float(ind['fitness'])
-        ind['other_info'] = other_info
+        #quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane)
+        #ind['fitness'] = quality
+        ind['fitness'] = 0#float(ind['fitness'])
+        #ind['other_info'] = other_info
     ind['phenotype'] = phen
     ind['mapping_values'] = mapping_values
     ind['tree_depth'] = tree_depth
@@ -90,7 +90,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_DIR = "../examples/robots"
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
-    it = 4
+    it = 0
     while it <= params['GENERATIONS']:
         robot_number = 0
         mutation_rate = it / params['GENERATIONS']
