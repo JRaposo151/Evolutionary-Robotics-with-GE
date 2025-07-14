@@ -261,6 +261,108 @@ def limbs(robot, blackSphere, limb, extra_sphere, joint, root):
     return robot
 
 
+def collision_test_and_commit(
+    robot: ET.Element,
+    testing_robot: str,
+    committed_path: str,
+    robot_number: int,
+    node_depth: int,
+    work_dir: str = "robots_test"
+):
+    """
+    1) Writes `robot` to work_dir/testing_robot
+    2) Loads into PyBullet with self-collision
+    3) Steps once, checks getContactPoints()
+    4) On collision: reverts `robot` ← committed_path (if exists), sets skip_until_depth
+    5) On no collision: copies testing → committed_path
+    6) Cleans up
+    Returns: (robot, collision_found: bool, skip_until_depth: Optional[int])
+    """
+    # --- 1. Save URDF to disk ---
+    tree = ET.ElementTree(robot)
+    ET.indent(tree, space="\t")
+    ET.indent(tree, space="  ", level=0)
+    output_folder = f"{work_dir}/"
+    os.makedirs(output_folder, exist_ok=True)
+    output_path = os.path.join(output_folder, testing_robot)
+    tree.write(output_path, encoding="utf-8", xml_declaration=True)
+    print(f"Saved temporary URDF to {output_path}")
+
+    # --- 2. Load into PyBullet ---
+    if not p.isConnected():
+        p.connect(p.DIRECT)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setGravity(0, 0, -9.8)
+
+    robotID = p.loadURDF(
+        output_path,
+        useFixedBase=True,
+        flags=p.URDF_USE_SELF_COLLISION
+    )
+    print(f"Loaded robot #{robot_number} into PyBullet (ID = {robotID})")
+
+    # build link_names
+    link_names = {}
+    body_info = p.getBodyInfo(robotID)
+    link_names[-1] = body_info[0].decode('utf-8')
+    num_joints = p.getNumJoints(robotID)
+    for j in range(num_joints):
+        info = p.getJointInfo(robotID, j)
+        link_names[info[0]] = info[12].decode('utf-8')
+
+    # disable visual‐only joints
+    for i in range(num_joints):
+        name = p.getJointInfo(robotID, i)[12].decode('utf-8')
+        if any(tag in name for tag in ("L_joint_", "Sphere_", "B_joint")):
+            p.setCollisionFilterGroupMask(
+                robotID, i,
+                collisionFilterGroup=0,
+                collisionFilterMask=0
+            )
+
+    # --- 3. Simple collision test ---
+    collision_found = False
+    p.stepSimulation()
+    contacts = p.getContactPoints(bodyA=robotID, bodyB=robotID)
+    skip_until_depth = None
+
+    if contacts:
+        collision_found = True
+        skip_until_depth = node_depth
+        print(f"⚠️ Self-collision detected:")
+        for c in contacts:
+            a, b = c[3], c[4]
+            nameA = link_names.get(a, f"<unknown:{a}>")
+            nameB = link_names.get(b, f"<unknown:{b}>")
+            print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
+
+        # revert to last committed if it exists
+        if os.path.exists(committed_path):
+            committed_tree = ET.parse(committed_path)
+            robot = committed_tree.getroot()
+            print(f"🔄 Reverted to committed URDF at {committed_path}")
+        else:
+            print(f"❌ No committed URDF at {committed_path} to revert to.")
+
+    else:
+        print("✅ No self-collisions detected in the test interval.")
+        shutil.copyfile(output_path, committed_path)
+        print(f"Promoted working URDF → {committed_path}")
+
+    # --- 4. Cleanup ---
+    p.removeBody(robotID)
+    print(f"Removed robot {robotID} from PyBullet.")
+    p.disconnect()
+
+    try:
+        os.remove(output_path)
+        print(f"Deleted temporary URDF file: {output_path}")
+    except OSError:
+        pass
+
+    return robot, collision_found, skip_until_depth
+
+
 
 def assemblement(robot_tree, robot_number):
 
@@ -394,79 +496,15 @@ def assemblement(robot_tree, robot_number):
 
         if not node.node_name == "0 ROOT" and not node.node_name.__contains__("joint"):
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
-            # --- 1. Save URDF to disk ---
+            committed_path = "robots_test/robot_update_free_Colision.urdf"
+            robot, collision_found, skip_until_depth = collision_test_and_commit(
+                robot,
+                testing_robot,
+                committed_path,
+                robot_number,
+                node.depth
+            )
 
-            tree = ET.ElementTree(robot)
-            ET.indent(tree, space="\t")
-            ET.indent(tree, space="  ", level=0)
-            output_folder = "robots_test/"
-            os.makedirs(output_folder, exist_ok=True)
-            output_path = os.path.join(output_folder, testing_robot)
-            committed_path = "robots_test/robot_committed.urdf"
-            # indent nicely
-            ET.indent(tree, space="  ")
-            tree.write(output_path, encoding="utf-8", xml_declaration=True)
-            print(f"Saved temporary URDF to {output_path}")
-
-            # --- 2. Load into PyBullet ---
-            if not p.isConnected():
-                p.connect(p.DIRECT)  # or p.GUI
-                p.setAdditionalSearchPath(pybullet_data.getDataPath())
-                p.setGravity(0, 0, -9.8)
-
-            robotID = p.loadURDF(output_path,
-                                 useFixedBase=True,
-                                 flags=p.URDF_USE_SELF_COLLISION)
-            print(f"Loaded robot #{robot_number} into PyBullet (ID = {robotID})")
-            link_names = {}
-            num_joints = p.getNumJoints(robotID)
-            body_info = p.getBodyInfo(robotID)
-            base_name = body_info[0].decode('utf‑8')
-            link_names[-1] = base_name
-            for j in range(num_joints):
-                info = p.getJointInfo(robotID, j)
-                # info[0] = joint index, info[12] = link name (as bytes)
-                link_index = info[0]
-                link_name = info[12].decode('utf‑8')
-                link_names[link_index] = link_name
-
-            for i in range(p.getNumJoints(robotID)):
-                joint_info = p.getJointInfo(robotID, i)
-                link_name = joint_info[12].decode("utf-8")
-
-                # Disable ALL collisions for links that are just visual joints
-                if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
-                    link_index = joint_info[0]
-                    p.setCollisionFilterGroupMask(robotID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
-
-            # --- 3. Simple collision test loop ---
-            collision_found = False
-            p.stepSimulation()
-            contacts = p.getContactPoints(bodyA=robotID, bodyB=robotID)
-            if contacts:
-                collision_found = True
-                skip_until_depth = node.depth
-                print(f"⚠️ Self-collision detected:")
-                for c in contacts:
-                    a, b = c[3], c[4]
-                    nameA = link_names.get(a, f"<unknown:{a}>")
-                    nameB = link_names.get(b, f"<unknown:{b}>")
-                    print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
-
-            if not collision_found:
-                print("✅ No self-collisions detected in the test interval.")
-                shutil.copyfile(output_path, committed_path)  # Promote working → committed
-
-            # --- 4. Cleanup ---
-            p.removeBody(robotID)
-            print(f"Removed robot {robotID} from PyBullet.")
-            p.disconnect()
-
-            try:
-                os.remove(output_path)
-                print(f"Deleted temporary URDF file: {output_path}")
-            except OSError as e:
-                print(f"Warning: could not delete {output_path}: {e}")
 
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
 
@@ -481,14 +519,7 @@ def assemblement(robot_tree, robot_number):
 
     # Full path to save
     output_file = os.path.join(output_folder, output_file)
-    shutil.copyfile(committed_path, output_file)
-    try:
-        os.remove(output_path)
-        print(f"Deleted temporary URDF file: {output_path}")
-    except OSError as e:
-        print(f"Already deleted temporary URDF file: {output_path}")
-    os.remove(committed_path)
-
+    tree.write(output_file, encoding="utf-8", xml_declaration=True)
     print(f"Done, robot {robot_number} constructed and ready to train")
     print("--------------------------------------------")
 
