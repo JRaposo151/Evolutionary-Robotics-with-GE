@@ -44,7 +44,7 @@ def evaluate(ind, eval_func, name, n_generation):
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
-    plane = 0                       # here is to switch between planes: horizontal or mountains
+    plane = 1                       # here is to switch between planes: horizontal or mountains (0 and 1)
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
 
