@@ -38,7 +38,7 @@
   <joint name="joint_2" type="fixed">
     <parent link="auxiliar"/>
     <child link="body_link2"/>
-    <origin xyz="0 0 -0.035" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.035" rpy="0 -1.55 0"/>
   </joint>
 
 </robot>

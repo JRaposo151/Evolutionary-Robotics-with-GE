@@ -67,7 +67,7 @@
     <parent link="bottom_sphere"/>
     <child link=""/>
     <!-- Adjust the origin so that Cube2 is offset relative to its left sphere -->
-    <origin xyz="0 -0.025 0" rpy="0 0 0"/>
+    <origin xyz="0 -0.025 0" rpy="-1.55 0 0"/>
   </joint>
 
 </robot>

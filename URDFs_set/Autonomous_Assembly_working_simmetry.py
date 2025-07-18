@@ -145,7 +145,7 @@ def JointRepresentation_conctBody(robot, sphere, representative_Joint, next_cube
         robot.append(child)
     return robot
 
-def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, blackSphere_name, faceSet_Covered, joint, root):
+def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphere, blackSphere_name, faceSet_Covered, joint, root, sim):
     for child in root:
 
         if child.tag == "joint" and child.attrib["name"] == "joint_1":
@@ -165,14 +165,26 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                         sub_child.attrib["rpy"] = "0 -1.55 0"
                     elif faceSet_Covered == "":
                         sub_child.attrib["rpy"] = "1.55 0 0"
+                    elif faceSet_Covered == "FRONT" and sim:
+                        sub_child.attrib["rpy"] = "0 0 3.11"
 
                 elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_CONT_HZ":
                     if faceSet_Covered == "BACK":
-                        sub_child.attrib["rpy"] = "1.55 0 0"
-                        sub_child.attrib["xyz"] = "0 -0.02 0"
+                        if sim:
+                            sub_child.attrib["rpy"] = "-1.55 0 0"
+                            sub_child.attrib["xyz"] = "0 0.02 0"
+                        else:
+                            sub_child.attrib["rpy"] = "1.55 0 0"
+                            sub_child.attrib["xyz"] = "0 -0.02 0"
+
                     if faceSet_Covered == "FRONT":
-                        sub_child.attrib["rpy"] = "-1.55 0 0"
-                        sub_child.attrib["xyz"] = "0 0.02 0"
+                        if sim:
+                            sub_child.attrib["rpy"] = "1.55 0 0"
+                            sub_child.attrib["xyz"] = "0 -0.02 0"
+                        else:
+                            sub_child.attrib["rpy"] = "-1.55 0 0"
+                            sub_child.attrib["xyz"] = "0 0.02 0"
+
                     if faceSet_Covered == "TOP":
                         sub_child.attrib["xyz"] = "0 0 0.02"
                     if faceSet_Covered == "BOTTOM":
@@ -188,15 +200,23 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
 
 
                 elif faceSet_Covered == "BACK":
-                    sub_child.attrib["rpy"] = "1.55 0 0"
+                    if sim:
+                        sub_child.attrib["rpy"] = "-1.55 0 0"
+                    else:
+                        sub_child.attrib["rpy"] = "1.55 0 0"
                 elif faceSet_Covered == "FRONT":
-                    sub_child.attrib["rpy"] = "-1.55 0 0"
+                    if sim:
+                        sub_child.attrib["rpy"] = "1.55 0 0"
+                    else:
+                        sub_child.attrib["rpy"] = "-1.55 0 0"
                 elif faceSet_Covered == "LEFT":
                     sub_child.attrib["rpy"] = "0 -1.55 0"
                 elif faceSet_Covered == "RIGHT":
                     sub_child.attrib["rpy"] = "0 1.55 0"
                 elif faceSet_Covered == "BOTTOM":
                     sub_child.attrib["rpy"] = "0 3.15 0"
+
+
 
 
         elif child.tag == "joint" and child.attrib["name"] == "joint_2":
@@ -212,12 +232,16 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                 elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO":
                     if faceSet_Covered == "RIGHT":
                         sub_child.attrib["rpy"] = "0 1.6 0"
+                        sub_child.attrib["xyz"] = "0.01 0 0"
                     elif faceSet_Covered == "LEFT" or faceSet_Covered == "TOP" or faceSet_Covered == "BOTTOM":
                         sub_child.attrib["rpy"] = "0 -1.6 0"
+                        sub_child.attrib["xyz"] = "-0.01 0 0"
                     elif faceSet_Covered == "FRONT":
                         sub_child.attrib["rpy"] = "-1.6 0 0"
+                        sub_child.attrib["xyz"] = "0 0.01 0"
                     elif faceSet_Covered == "BACK":
                         sub_child.attrib["rpy"] = "1.6 0 0"
+                        sub_child.attrib["xyz"] = "0 -0.01 0"
 
         elif child.tag == "link":
             child.attrib["name"] = representative_Joint
@@ -282,7 +306,8 @@ def collision_test_and_commit(
     committed_path: str,
     robot_number: int,
     node_depth: int,
-    work_dir: str = "robots_test"
+    work_dir: str = "robots_test",
+
 ):
     """
     1) Writes `robot` to work_dir/testing_robot
@@ -375,6 +400,7 @@ def collision_test_and_commit(
     except OSError:
         pass
 
+
     return robot, collision_found, skip_until_depth
 
 def assemblement(robot_tree, robot_number):
@@ -400,6 +426,7 @@ def assemblement(robot_tree, robot_number):
     global simetry_activated
     simetry_activated = False
     pass_cube = False
+    sim_check = False
 
     print("Assembling Started: ")
 
@@ -419,14 +446,14 @@ def assemblement(robot_tree, robot_number):
         if pass_cube:
             pass_cube = False
             continue
-        if robot_number == "GEN_0_number_12" and node.node_name == "15 body_Link_CUBE":
+        if robot_number == "GEN_0_number_56" :
             print("A")
         # if we’re in “skip mode” and still below the skip depth, keep skipping
         if skip_until_depth is not None and node.depth > skip_until_depth:
             continue
         if skip_until_depth is not None and node.depth <= skip_until_depth:
             skip_until_depth = None
-        if turn_sim_off_node >= node.depth and simetry_activated:
+        if (turn_sim_off_node >= node.depth and simetry_activated):
             turn_sim_off_node = 0
             save_file(symmetry_part, "simetry.urdf")
             simetry_activated = False
@@ -434,6 +461,36 @@ def assemblement(robot_tree, robot_number):
             for child in root:
                 robot.append(child)
             symmetry_part = ET.Element("robot", name="sim")
+            committed_path = "robots_test/robot_update_free_Colision.urdf"
+            robot, collision_found, skip_until_depth = collision_test_and_commit(
+                robot,
+                testing_robot,
+                committed_path,
+                robot_number,
+                node.depth,
+            )
+            sim_check = False
+            if skip_until_depth is not None:
+                skip_until_depth = None
+
+        if sim_check:
+            save_file(symmetry_part, "simetry.urdf")
+            root, _ = treeFunction(["simetry.urdf"])
+            for child in root:
+                robot.append(child)
+            symmetry_part = ET.Element("robot", name="sim")
+            committed_path = "robots_test/robot_update_free_Colision.urdf"
+            robot, collision_found, skip_until_depth = collision_test_and_commit(
+                robot,
+                testing_robot,
+                committed_path,
+                robot_number,
+                node.depth,
+            )
+            sim_check = False
+            if skip_until_depth is not None:
+                skip_until_depth = None
+
 
         # for each node in the tree, it will be add to the robot file a component
 
@@ -464,13 +521,20 @@ def assemblement(robot_tree, robot_number):
                 cube = node.node_name
                 if direction_occupied == "LEFT":
                     faceSet_Covered[cube].append("RIGHT")
+                    faceSet_Covered[cube].append("BACK")
                     j = node.parent
                     if x_axis.__contains__(j.parent.node_name):
                         x_axis.append(cube)
+                    elif z_axis.__contains__(j.parent.node_name):
+                        x_axis.append(cube)
+
                 if direction_occupied == "RIGHT":
                     faceSet_Covered[cube].append("LEFT")
+                    faceSet_Covered[cube].append("BACK")
                     j = node.parent
                     if x_axis.__contains__(j.parent.node_name):
+                        x_axis.append(cube)
+                    elif z_axis.__contains__(j.parent.node_name):
                         x_axis.append(cube)
                 if direction_occupied == "TOP":
                     faceSet_Covered[cube].append("BOTTOM")
@@ -478,6 +542,7 @@ def assemblement(robot_tree, robot_number):
                     j = node.parent
                     if z_axis.__contains__(j.parent.node_name):
                         z_axis.append(cube)
+
                 if direction_occupied == "FRONT":
                     faceSet_Covered[cube].append("BACK")
                 if direction_occupied == "BACK":
@@ -523,7 +588,7 @@ def assemblement(robot_tree, robot_number):
             elif simetry_activated and faceSet_Covered[cube][-1] == "TOP":
                 root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'])
             elif faceSet_Covered[cube][-1] == "FRONT":
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_FRONT.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
             elif faceSet_Covered[cube][-1] == "BACK":
                 root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
 
@@ -565,6 +630,10 @@ def assemblement(robot_tree, robot_number):
         ## HERE IS THE LIMB JOINT CONSTRUCTION
         elif node.node_name.__contains__("L_joint"):
             cube = node.parent.node_name
+            if cube.__contains__("body_Link_CUBE"):
+                if len(faceSet_Covered[cube]) == 6:
+                    pass_cube = True
+                    continue
             if node.parent.node_name.__contains__("body_Link_CUBE"):
                 root, direction = treeFunction(input_file_sphereAUX)
                 while True:
@@ -593,14 +662,14 @@ def assemblement(robot_tree, robot_number):
                 elif simetry_activated and faceSet_Covered[cube][-1] == "TOP":
                     root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'])
                 elif simetry_activated and faceSet_Covered[cube][-1] == "FRONT":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_FRONT.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
 
 
                 robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
                 joints = node.node_name.split(" ")
                 root, direction = treeFunction([joints[-1] + ".urdf"])
                 robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere,blackSphere.blackSphere_name,
-                                                      faceSet_Covered.get(cube, [])[-1], joint, root)
+                                                      faceSet_Covered.get(cube, [])[-1], joint, root, False)
                 sphere.sphere_N += 1
                 extra_sphere.Extra_N += 1
 
@@ -612,15 +681,15 @@ def assemblement(robot_tree, robot_number):
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, sphere.sphere_name,
                                                                       f"{node.node_name}_sim", blackSphere,
                                                                       f"{blackSphere.blackSphere_name}_sim",
-                                                                      "BACK", joint,
-                                                                      root_sim)
+                                                                      faceSet_Covered.get(cube, [])[-1], joint,
+                                                                      root_sim, True)
                         sphere.sphere_N += 1
                     else:
                         symmetry_part = AuxiliarSphere(symmetry_part, f"{node.parent.node_name}_sim", joint, sphere, root_sim)
                         joints = node.node_name.split(" ")
                         root_sim, direction = treeFunction([joints[-1] + ".urdf"])
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, sphere.sphere_name, f"{node.node_name}_sim", blackSphere, f"{blackSphere.blackSphere_name}_sim",
-                                                              faceSet_Covered.get(cube, [])[-1], joint, root_sim)
+                                                              faceSet_Covered.get(cube, [])[-1], joint, root_sim, True)
                         sphere.sphere_N += 1
 
             else:
@@ -629,20 +698,20 @@ def assemblement(robot_tree, robot_number):
 
                 if node.parent.node_name.__contains__("wheel"):
                     robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere,blackSphere.blackSphere_name, "",
-                                                          joint, root)
+                                                          joint, root, False)
                 else:
                     robot = JointRepresentation_conctLimb(robot, extra_sphere.extraSphere_name, node.node_name,
-                                                          blackSphere,blackSphere.blackSphere_name, "", joint, root)
+                                                          blackSphere,blackSphere.blackSphere_name, "", joint, root, False)
 
 
                 if simetry_activated:
                     root_sim, direction = treeFunction([joints[-1] + ".urdf"])
                     if node.parent.node_name.__contains__("wheel"):
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, f"{node.parent.node_name}_sim", f"{node.node_name}_sim", blackSphere,f"{blackSphere.blackSphere_name}_sim",
-                                                              "", joint, root_sim)
+                                                              "", joint, root_sim, True)
                     else:
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, f"{extra_sphere.extraSphere_name}_sim", f"{node.node_name}_sim",
-                                                              blackSphere,f"{blackSphere.blackSphere_name}_sim", "", joint, root_sim)
+                                                              blackSphere,f"{blackSphere.blackSphere_name}_sim", "", joint, root_sim, True)
                 extra_sphere.Extra_N += 1
 
         ## HERE IS THE LIMB CONSTRUCTION
@@ -664,7 +733,6 @@ def assemblement(robot_tree, robot_number):
             else:
                 robot = limbs(robot, blackSphere, blackSphere.blackSphere_name, node.node_name, extra_sphere,extra_sphere.extraSphere_name, joint,
                               root)
-
 
 
 
@@ -695,13 +763,15 @@ def assemblement(robot_tree, robot_number):
         if not node.node_name == "0 ROOT" and not node.node_name.__contains__("joint"):
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
             committed_path = "robots_test/robot_update_free_Colision.urdf"
-            robot, collision_found, skip_until_depth = collision_test_and_commit(
+            robot, collision_found, skip_until_depth,  = collision_test_and_commit(
                 robot,
                 testing_robot,
                 committed_path,
                 robot_number,
-                node.depth
+                node.depth,
             )
+            if not node.node_name == "0 ROOT" and not node.node_name == "0 body_Link_CUBE" and not node.node_name.__contains__("ε"):
+                sim_check = True
 
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
 
@@ -717,7 +787,7 @@ def assemblement(robot_tree, robot_number):
             testing_robot,
             committed_path,
             robot_number,
-            0
+            0,
         )
 
     tree = ET.ElementTree(robot)
