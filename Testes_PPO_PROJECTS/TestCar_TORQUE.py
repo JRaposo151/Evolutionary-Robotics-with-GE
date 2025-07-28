@@ -38,28 +38,29 @@ class LaikagoEnv(gym.Env):
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
 
         p.setGravity(0, 0, -9.8)
-        heightData = np.loadtxt("terrain_data.csv", delimiter=',')
-        terrainSize = 256  # Assuming the terrain is 256x256
-        heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-        # Create the terrain shape
-        terrainShape = p.createCollisionShape(
-            shapeType=p.GEOM_HEIGHTFIELD,
-            meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-            heightfieldTextureScaling=terrainSize / 2,
-            heightfieldData=heightfieldData,
-            numHeightfieldRows=terrainSize,
-            numHeightfieldColumns=terrainSize
-        )
-
-        # Create the terrain object
-        terrainId = p.createMultiBody(0, terrainShape)
-        p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-        p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-        # Set the friction coefficient of the terrain
-        p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
+        self.plane = p.loadURDF("plane.urdf")
+        # heightData = np.loadtxt("terrain_data.csv", delimiter=',')
+        # terrainSize = 256  # Assuming the terrain is 256x256
+        # heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+        #
+        # # Create the terrain shape
+        # terrainShape = p.createCollisionShape(
+        #     shapeType=p.GEOM_HEIGHTFIELD,
+        #     meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+        #     heightfieldTextureScaling=terrainSize / 2,
+        #     heightfieldData=heightfieldData,
+        #     numHeightfieldRows=terrainSize,
+        #     numHeightfieldColumns=terrainSize
+        # )
+        #
+        # # Create the terrain object
+        # terrainId = p.createMultiBody(0, terrainShape)
+        # p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+        # p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+        #
+        # # Set the friction coefficient of the terrain
+        # p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+        #
         useFixedBase = False
 
         self.ori = [0, 0, 0.1, 0]
@@ -125,28 +126,28 @@ class LaikagoEnv(gym.Env):
     def reset(self, **kwargs):
         p.resetSimulation()
         p.setGravity(0, 0, -9.8)
-        heightData = np.loadtxt("terrain_data.csv", delimiter=',')
-        terrainSize = 256  # Assuming the terrain is 256x256
-        heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-        # Create the terrain shape
-        terrainShape = p.createCollisionShape(
-            shapeType=p.GEOM_HEIGHTFIELD,
-            meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-            heightfieldTextureScaling=terrainSize / 2,
-            heightfieldData=heightfieldData,
-            numHeightfieldRows=terrainSize,
-            numHeightfieldColumns=terrainSize
-        )
-
-        # Create the terrain object
-        terrainId = p.createMultiBody(0, terrainShape)
-        p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-        p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-        # Set the friction coefficient of the terrain
-        p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
+        # heightData = np.loadtxt("terrain_data.csv", delimiter=',')
+        # terrainSize = 256  # Assuming the terrain is 256x256
+        # heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+        #
+        # # Create the terrain shape
+        # terrainShape = p.createCollisionShape(
+        #     shapeType=p.GEOM_HEIGHTFIELD,
+        #     meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+        #     heightfieldTextureScaling=terrainSize / 2,
+        #     heightfieldData=heightfieldData,
+        #     numHeightfieldRows=terrainSize,
+        #     numHeightfieldColumns=terrainSize
+        # )
+        #
+        # # Create the terrain object
+        # terrainId = p.createMultiBody(0, terrainShape)
+        # p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+        # p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+        #
+        # # Set the friction coefficient of the terrain
+        # p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+        p.loadURDF("plane.urdf")
         self.robot = p.loadURDF(self.path, [0, 0, 0.1], self.ori, useFixedBase=False, flags=self.flags)
         self.let_robot_fall()
 
@@ -200,7 +201,7 @@ def torque():
           torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
 # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
-    if not os.path.exists(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN.zip"):
+    if not os.path.exists(f"ppo_husky_TORQUE_CONTROL.zip"):
         # Train the PPO model on this environment
 
 
@@ -224,9 +225,9 @@ def torque():
                             )
         model.learn(total_timesteps=500000)
         # Save the trained model
-        model.save(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN")
+        model.save(f"ppo_husky_TORQUE_CONTROL")
         print(f"CAR Trained")
-        env.save("ppo_husky_TORQUE_CONTROL_NEWTERRAIN.pkl")
+        env.save("ppo_husky_TORQUE_CONTROL.pkl")
         env.close()
 # ::::::::::::::: Train the PPO model on this environment ::::::::::::::::::::::
 
@@ -234,10 +235,10 @@ def torque():
 
 # --------------------- Testing/Visualization Phase ------------------------
     with open("Results3.txt", "w") as file:
-        model = PPO.load(f"ppo_husky_TORQUE_CONTROL_NEWTERRAIN")
+        model = PPO.load(f"ppo_husky_TORQUE_CONTROL")
         test_env = [make_husky_env(path, render=True) for _ in range(1)]
         test_env = SubprocVecEnv(test_env)  # Or use DummyVecEnv if you have debugging needs
-        test_env = VecNormalize.load("ppo_husky_TORQUE_CONTROL_NEWTERRAIN.pkl", test_env)
+        test_env = VecNormalize.load("ppo_husky_TORQUE_CONTROL.pkl", test_env)
         #  do not update them at test time
         test_env.training = False
         # reward normalization is not needed at test time
