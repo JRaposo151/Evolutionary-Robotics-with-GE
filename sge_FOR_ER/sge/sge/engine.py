@@ -54,7 +54,7 @@ def evaluate(ind, eval_func, name, n_generation):
     else:
         quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane)
         ind['fitness'] = quality
-        ind['fitness'] = 0#float(ind['fitness'])
+        ind['fitness'] = float(ind['fitness'])
         ind['other_info'] = other_info
     ind['phenotype'] = phen
     ind['mapping_values'] = mapping_values
