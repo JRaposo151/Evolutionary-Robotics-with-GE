@@ -96,7 +96,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_number = 0
     import json
     import os
-    directory = '../examples/dumps/Test'
+    directory = '../examples/dumps/example'
     if not os.listdir(directory):
         print("Directory is empty")
     else:
