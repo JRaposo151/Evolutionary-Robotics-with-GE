@@ -23,10 +23,6 @@ def train(PATH, name, n_generation, plane):
     model_path = os.path.join(output_folder_brains, f"{name}.zip")
 
     if not os.path.exists(model_path):
-        seed = 10
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
 
 
         # # Check if CUDA is available
@@ -59,7 +55,7 @@ def train(PATH, name, n_generation, plane):
                     gae_lambda=0.95,
                     verbose=1,
                     tensorboard_log="./logs_1/",
-                    seed=seed,
+                    seed=42,
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
