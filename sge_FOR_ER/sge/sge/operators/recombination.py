@@ -17,4 +17,4 @@ def crossover(p1, p2, robot_number):
     # compute nem individual
     _, tree_depth, tree = grammar.mapping(genotype, mapping_values)
     Autonomous_Assembly_working.assemblement(tree, robot_number)
-    return {'genotype': genotype, 'fitness': None, 'mapping_values': mapping_values, 'tree_depth': tree_depth}
+    return {'genotype': genotype, 'fitness': None, 'mapping_values': mapping_values,'name':"robot_"+robot_number, 'tree_depth': tree_depth}

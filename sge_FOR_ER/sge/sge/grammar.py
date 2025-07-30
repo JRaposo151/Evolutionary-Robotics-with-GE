@@ -344,7 +344,6 @@ get_grammar = _inst.get_grammar
 get_shortest_path = _inst.get_shortest_path
 
 if __name__ == "__main__":
-    random.seed(42)
     g = Grammar()
     g.set_path("grammars/regression.txt")
     # g.set_max_tree_depth(9)

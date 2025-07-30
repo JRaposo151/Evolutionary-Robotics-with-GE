@@ -93,8 +93,31 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
     it = 0
+    robot_number = 0
+    import json
+    import os
+    directory = '../dumps/Tests'
+    if not os.listdir(directory):
+        print("Directory is empty")
+    else:
+        print("Directory is not empty")
+        # === 1. Load saved population from previous generation ===
+        checkpoint_path = "../dumps/Tests/iteration_0.json"
+        with open(checkpoint_path, "r") as f:
+            population = json.load(f)
+
+        # === 2. Set the generation number (based on the file) ===
+        # Extract generation number from filename (e.g., iteration_3.json → 4)
+        it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
+        # === 3. Get the last robot number from the loaded population ===
+        last_ind = population[-1]  # last individual in the list
+        robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
+
+        # Extract the number from the name string
+        robot_number = int(robot_name.split("_")[-1].split(".")[0]) + 1
+
+
     while it <= params['GENERATIONS']:
-        robot_number = 0
         mutation_rate = it / params['GENERATIONS']
         crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
         for i in tqdm(population):
@@ -123,12 +146,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
             else:
                 ni = tournament(population, params['TSIZE'])
             ni = mutate(ni, mutation_rate)
-
-            evaluate(ni, evaluation_function, name, it)
             new_population.append(ni)
-
-        new_population.sort(key=lambda x: x['fitness'], reverse=True)
-        logger.evolution_progress(it, new_population)
 
         population = new_population
         robots = "../examples/robots"
@@ -151,7 +169,12 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
         os.makedirs(ind_save_path, exist_ok=True)
         import shutil
         # Find best individual of current generation
-        best_ind = max(population, key=lambda ind: ind['fitness'])  # or min(), depending on fitness goal
+        valid_inds = [ind for ind in population if ind['fitness'] is not None]
+        if valid_inds:
+            best_ind = max(valid_inds, key=lambda ind: ind['fitness'])
+        else:
+            print("No valid individuals with fitness found.")
+            best_ind = None  # or handle this differently
         # Extract base name without extension (e.g., robot_GEN_000_number_0)
         base_name = os.path.splitext(best_ind['name'])[0]
         generation_number = it
@@ -184,6 +207,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
             print(f"[WARNING] ZIP not found: {zip_source}")
 
         it += 1
+        robot_number = 0
 
     """
     PLOTTING THE RESULTS
