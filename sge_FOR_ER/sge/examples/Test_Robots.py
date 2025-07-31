@@ -27,8 +27,6 @@ class BostonHousing():
         """
         Train and evaluate a robot using the given individual
         """
-
-        # Generate a random “fitness” in [0, 1)
         try:
             PPO_train.train(ROBOT_PATH, name, n_generation, plane)
             fitness = PPO_TEST.test(ROBOT_PATH, name,plane)
