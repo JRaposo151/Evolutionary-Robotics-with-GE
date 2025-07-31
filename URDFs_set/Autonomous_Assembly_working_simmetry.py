@@ -558,6 +558,8 @@ def assemblement(robot_tree, robot_number):
         ## HERE IS THE AUXILIAR SPHERE CONSTRUCTION AND JOINT FOR BODY
         elif node.node_name.__contains__("B_joint"):
             cube = node.parent.node_name
+            if "body_Link_CUBE" not in cube:
+                continue
             if len(faceSet_Covered[cube]) == 6:
                 pass_cube = True
                 continue
