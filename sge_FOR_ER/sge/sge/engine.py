@@ -94,13 +94,13 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_number = 0
     import json
     import os
-    directory = '../examples/dumps/Test'
+    directory = '../dumps/example'
     if not os.listdir(directory):
         print("Directory is empty")
     else:
         print("Directory is not empty")
         # === 1. Load saved population from previous generation ===
-        checkpoint_path = "../examples/dumps/Test/run_1/iteration_0.json"
+        checkpoint_path = directory + "/run_1/iteration_0.json"
         with open(checkpoint_path, "r") as f:
             population = json.load(f)
 
