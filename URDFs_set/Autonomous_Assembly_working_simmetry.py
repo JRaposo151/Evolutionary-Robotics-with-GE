@@ -444,9 +444,11 @@ def assemblement(robot_tree, robot_number):
 
     for node in preorder_iter(robot_tree):
         if pass_cube:
+            if skip_cube is not None and node.depth > skip_cube:
+                continue
+            skip_cube = None
             pass_cube = False
-            continue
-        if robot_number == "GEN_0_number_56" :
+        if robot_number == "GEN_1_number_5" and node.node_name == "201 B_joint_fixed":
             print("A")
         # if we’re in “skip mode” and still below the skip depth, keep skipping
         if skip_until_depth is not None and node.depth > skip_until_depth:
@@ -562,6 +564,7 @@ def assemblement(robot_tree, robot_number):
                 continue
             if len(faceSet_Covered[cube]) == 6:
                 pass_cube = True
+                skip_cube = node.depth
                 continue
             root, direction = treeFunction(input_file_sphereAUX)
             while True:
@@ -635,6 +638,7 @@ def assemblement(robot_tree, robot_number):
             if cube.__contains__("body_Link_CUBE"):
                 if len(faceSet_Covered[cube]) == 6:
                     pass_cube = True
+                    skip_cube = node.depth
                     continue
             if node.parent.node_name.__contains__("body_Link_CUBE"):
                 root, direction = treeFunction(input_file_sphereAUX)
