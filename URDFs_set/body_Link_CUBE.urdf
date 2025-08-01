@@ -2,73 +2,14 @@
 <robot name="BODY_LINK">
   <link name="body_link">
 
-    <!-- FRONT face (red) -->
-    <visual>
-      <origin xyz="0 0 0.023" rpy="0 0 0"/>
+<visual>
       <geometry>
-        <box size="0.046 0.046 0.001"/>
+        <box size="0.046 0.046 0.046"/> <!-- Cube with 10cm sides -->
       </geometry>
       <material name="red">
         <color rgba="1.0 0.0 0.0 1.0"/>
       </material>
     </visual>
-
-    <!-- BACK face (green) -->
-    <visual>
-      <origin xyz="0 0 -0.023" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.046 0.046 0.001"/>
-      </geometry>
-      <material name="green">
-        <color rgba="0.0 1.0 0.0 1.0"/>
-      </material>
-    </visual>
-
-    <!-- RIGHT face (blue) -->
-    <visual>
-      <origin xyz="0.023 0 0" rpy="0 1.5708 0"/>
-      <geometry>
-        <box size="0.046 0.046 0.001"/>
-      </geometry>
-      <material name="blue">
-        <color rgba="0.0 0.0 1.0 1.0"/>
-      </material>
-    </visual>
-
-    <!-- LEFT face (yellow) -->
-    <visual>
-      <origin xyz="-0.023 0 0" rpy="0 1.5708 0"/>
-      <geometry>
-        <box size="0.046 0.046 0.001"/>
-      </geometry>
-      <material name="yellow">
-        <color rgba="1.0 1.0 0.0 1.0"/>
-      </material>
-    </visual>
-
-    <!-- TOP face (cyan) -->
-    <visual>
-      <origin xyz="0 0.023 0" rpy="1.5708 0 0"/>
-      <geometry>
-        <box size="0.046 0.046 0.001"/>
-      </geometry>
-      <material name="cyan">
-        <color rgba="0.0 1.0 1.0 1.0"/>
-      </material>
-    </visual>
-
-    <!-- BOTTOM face (magenta) -->
-    <visual>
-      <origin xyz="0 -0.023 0" rpy="1.5708 0 0"/>
-      <geometry>
-        <box size="0.046 0.046 0.001"/>
-      </geometry>
-      <material name="magenta">
-        <color rgba="1.0 0.0 1.0 1.0"/>
-      </material>
-    </visual>
-
-    <!-- Collision and Inertia (single cube) -->
     <collision>
       <geometry>
         <box size="0.046 0.046 0.046"/>
@@ -77,9 +18,8 @@
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.0000353" ixy="0.0" ixz="0.0"
-               iyy="0.0000353" iyz="0.0"
-               izz="0.0000353"/>
-    </inertial>
-
+      iyy="0.0000353" iyz="0.0"
+      izz="0.0000353"/>
+     </inertial>
   </link>
 </robot>
