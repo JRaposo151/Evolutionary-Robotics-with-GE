@@ -94,27 +94,27 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     population = list(make_initial_population())
     it = 0
     robot_number = 0
-    # import json
-    # import os
-    # directory = '../examples/dumps/example'
-    # if not os.listdir(directory):
-    #     print("Directory is empty")
-    # else:
-    #     print("Directory is not empty")
-    #     # === 1. Load saved population from previous generation ===
-    #     checkpoint_path = "../examples/dumps/example/iteration_0.json"
-    #     with open(checkpoint_path, "r") as f:
-    #         population = json.load(f)
-    #
-    #     # === 2. Set the generation number (based on the file) ===
-    #     # Extract generation number from filename (e.g., iteration_3.json → 4)
-    #     it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
-    #     # === 3. Get the last robot number from the loaded population ===
-    #     last_ind = population[-1]  # last individual in the list
-    #     robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
-    #
-    #     # Extract the number from the name string
-    #     robot_number = int(robot_name.split("_")[-1].split(".")[0]) + 1
+    import json
+    import os
+    directory = '../examples/dumps/example'
+    if not os.listdir(directory):
+        print("Directory is empty")
+    else:
+        print("Directory is not empty")
+        # === 1. Load saved population from previous generation ===
+        checkpoint_path = "../examples/dumps/example/iteration_5.json"
+        with open(checkpoint_path, "r") as f:
+            population = json.load(f)
+
+        # === 2. Set the generation number (based on the file) ===
+        # Extract generation number from filename (e.g., iteration_3.json → 4)
+        it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
+        # === 3. Get the last robot number from the loaded population ===
+        last_ind = population[-1]  # last individual in the list
+        robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
+
+        # Extract the number from the name string
+        robot_number = int(robot_name.split("_")[-1].split(".")[0]) + 1
 
 
     while it <= params['GENERATIONS']:
