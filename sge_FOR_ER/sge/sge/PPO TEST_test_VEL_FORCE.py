@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-from Env import URDFRobotEnv
+from sge_FOR_ER.sge.sge.Env import URDFRobotEnv
 import pybullet as p
 
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
@@ -25,23 +25,19 @@ def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render, plane):
 
 # Open the file for writing evaluation results
 with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força.txt"), 'w') as f:
-    name = 0
     f.write("Evaluation Results:\n\n")
     # Run evaluation for robots
-    for force in forces:
-        # turn 0.05 → "0_05", 0.1 → "0_1", 1.0 → "1_0" (or "1" if you prefer)
-        force_str = str(force).rstrip('0').rstrip('.')  # e.g. "0.05"→"0.05"; "1.0"→"1"
-        force_str = force_str.replace('.', '_')  # e.g. "0.05"→"0_05"
+    for i in range(0,10):
 
         for velocity in velocities:
 
             print("------------- ------------- ------------- ------------- ")
-            print(f"------------- Evaluating Robot number {name} Force {force}  Velocity {velocity} -------------")
+            print(f"------------- Evaluating Robot number {i} Force {0.5}  Velocity {velocity} -------------")
             print("------------- ------------- ------------- ------------- ")
-            vec_path_2 = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/sge/robots_ind/best_gen_000.pkl"
+            vec_path_2 = f"./robots_ind/best_gen_00{i}.pkl"
 
-            ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/sge/robots_ind/best_gen_000.urdf"
-            model_name = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/sge/robots_ind/best_gen_000"
+            ROBOT_URDF_PATH = f"./robots_ind/best_gen_00{i}.urdf"
+            model_name = f"./robots_ind/best_gen_00{i}"
 
             # # Ensure the model file exists
             # if not os.path.exists(model_name):
@@ -91,9 +87,10 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             print(f"\nEvaluation over {n_eval_episodes} episodes: mean_reward = {mean_reward:.2f} +/- {std_reward:.2f}\n")
             # -------------------------
             # Write the results to the file
-            f.write(f"Model {name} Velocity: {velocity} Force: {force} ZIP: models_PPO_Test/testVandF_robot{name}.zip \n")
+            f.write(f"Model {i} Velocity: {velocity} Force: {i} ZIP: models_PPO_Test/testVandF_robot{i}.zip \n")
             f.write(f"  Mean Reward = {mean_reward:.2f} +/- {std_reward:.2f}\n\n")
 
             # Clean up
             obs= env_vec.reset()
             env_vec.close()
+            p.disconnect()
