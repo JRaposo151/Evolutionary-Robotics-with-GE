@@ -542,7 +542,7 @@ def assemblement(robot_tree, robot_number):
                     faceSet_Covered[cube].append("BOTTOM")
                     faceSet_Covered[cube].append("BACK")
                     j = node.parent
-                    if z_axis.__contains__(j.parent.node_name):
+                    if z_axis.__contains__(j.parent.node_name)or x_axis.__contains__(j.parent.node_name):
                         z_axis.append(cube)
 
                 if direction_occupied == "FRONT":
@@ -553,7 +553,7 @@ def assemblement(robot_tree, robot_number):
                     faceSet_Covered[cube].append("TOP")
                     faceSet_Covered[cube].append("BACK")
                     j = node.parent
-                    if z_axis.__contains__(j.parent.node_name):
+                    if z_axis.__contains__(j.parent.node_name)or x_axis.__contains__(j.parent.node_name):
                         z_axis.append(cube)
 
 
