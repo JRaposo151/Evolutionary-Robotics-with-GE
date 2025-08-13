@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-from Env import URDFRobotEnv
+from sge_FOR_ER.sge.sge.Env import URDFRobotEnv
 import pybullet as p
 
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
@@ -38,12 +38,12 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             print("------------- ------------- ------------- ------------- ")
             print(f"------------- Evaluating Robot number {name} Force {force}  Velocity {velocity} -------------")
             print("------------- ------------- ------------- ------------- ")
-            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/testVandF_robooooooooooot0_VELO_5_FORCE_0_5.pkl"
+            vec_path_2 = f"./robots_ind/best_gen_000.pkl"
 
-            ROBOT_URDF_PATH = f"best_gen_000.urdf"
+            ROBOT_URDF_PATH = f"./robots_ind/best_gen_000.urdf"
             #ROBOT_URDF_PATH = "../robots/robot_GEN_2_number_33.urdf"
             #model_name = f"{path_2}/robot_GEN_2_number_33"
-            model_name = f"./models_PPO_Test_NEW_REWARD/testVandF_robooooooooooot0_VELO_5_FORCE_0_5"
+            model_name = f"./robots_ind/best_gen_000"
 
             # # Ensure the model file exists
             # if not os.path.exists(model_name):
@@ -99,4 +99,3 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             # Clean up
             obs= env_vec.reset()
             env_vec.close()
-
