@@ -107,7 +107,7 @@ def plot_progress_report():
     plt.tight_layout()
     output_dir = "plots"
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(os.path.join(output_dir, f"fitness_plot_run_{params['RUN']}.png"), dpi=300)
+    plt.savefig(os.path.join(output_dir, f"fitness_plot_run_{params['RUN']}_1.png"), dpi=300)
     plt.show()
     plt.close()
 
