@@ -146,7 +146,7 @@ class URDFRobotEnv(gym.Env):
         if self.render_mode:
             time.sleep(1.0 / 240.0)
         contacts = p.getContactPoints(bodyA=self.roboID, bodyB=self.terrainId)
-        print("Number of contact points:", len(contacts))
+        #print("Number of contact points:", len(contacts))
         if len(contacts) == 0 and len(self.last_place) == 0:
             self.last_place, _ = p.getBasePositionAndOrientation(self.roboID)
         elif len(contacts) == 0 and len(self.last_place) != 0:
