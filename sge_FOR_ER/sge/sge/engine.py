@@ -92,24 +92,24 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     population = list(make_initial_population())
     it = 0
     robot_number = 0
-    import json
-    import os
-    directory = './dumps/example'
-    if not os.listdir(directory):
-        print("Directory is empty")
-    else:
-        print("Directory is not empty")
-        # === 1. Load saved population from previous generation ===
-        checkpoint_path = directory + "/run_1/iteration_6.json"
-        with open(checkpoint_path, "r") as f:
-            population = json.load(f)
-
-        # === 2. Set the generation number (based on the file) ===
-        # Extract generation number from filename (e.g., iteration_3.json → 4)
-        it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
-        # === 3. Get the last robot number from the loaded population ===
-        last_ind = population[-1]  # last individual in the list
-        robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
+    # import json
+    # import os
+    # directory = './dumps/example'
+    # if not os.listdir(directory):
+    #     print("Directory is empty")
+    # else:
+    #     print("Directory is not empty")
+    #     # === 1. Load saved population from previous generation ===
+    #     checkpoint_path = directory + "/run_1/iteration_6.json"
+    #     with open(checkpoint_path, "r") as f:
+    #         population = json.load(f)
+    #
+    #     # === 2. Set the generation number (based on the file) ===
+    #     # Extract generation number from filename (e.g., iteration_3.json → 4)
+    #     it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
+    #     # === 3. Get the last robot number from the loaded population ===
+    #     last_ind = population[-1]  # last individual in the list
+    #     robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
     while it <= params['GENERATIONS']:
         mutation_rate = it / params['GENERATIONS']
         crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
