@@ -67,12 +67,12 @@ class URDFRobotEnv(gym.Env):
             )
 
             # Create the terrain object
-            self.terrainId =  p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(self.terrainId , [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(self.terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+            terrainId = p.createMultiBody(0, terrainShape)
+            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
 
             # Set the friction coefficient of the terrain
-            p.changeDynamics(self.terrainId, -1, lateralFriction=1.0)
+            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
 
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
@@ -138,22 +138,13 @@ class URDFRobotEnv(gym.Env):
                 link_index = joint_info[0]
                 p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
 
-        self.last_place = []
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
         self.stepCounter += 1
         if self.render_mode:
             time.sleep(1.0 / 240.0)
-        contacts = p.getContactPoints(bodyA=self.roboID, bodyB=self.terrainId)
-        print("Number of contact points:", len(contacts))
-        if len(contacts) == 0 and len(self.last_place) == 0:
-            self.last_place, _ = p.getBasePositionAndOrientation(self.roboID)
-        elif len(contacts) == 0 and len(self.last_place) != 0:
-            self.position, _ = p.getBasePositionAndOrientation(self.roboID)
-        elif len(contacts) != 0:
-            self.last_place = []
-            self.position = []
+
         # Apply actions to each movable joint
         for i, joint in enumerate(self.movable_joints):
             joint_info = p.getJointInfo(self.roboID, joint)
@@ -176,7 +167,7 @@ class URDFRobotEnv(gym.Env):
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
-        reward, done, truncated = self.compute_reward(robot_position,contacts)
+        reward, done, truncated = self.compute_reward(robot_position)
 
         return observation, reward, done, truncated, {}
 
@@ -207,7 +198,7 @@ class URDFRobotEnv(gym.Env):
         return observation
 
 
-    def compute_reward(self, current_position, contacts):
+    def compute_reward(self, current_position):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
         reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
@@ -223,11 +214,7 @@ class URDFRobotEnv(gym.Env):
             done = self.stepCounter >= 4800
             return reward, done, False
         else:
-            if not len(self.last_place) == 0:
-                if (self.plane == 1 and (len(contacts) == 0) and (
-                        current_position[2] - self.last_place[2] > 0.3 or current_position[2] - self.last_place[
-                    2] < -0.3)):
-                    return -1.0, True, True
+
             # End episode after 20 seconds (4800 steps at 240Hz)
             done = self.stepCounter >= 4800
             return reward, done, False
@@ -235,7 +222,6 @@ class URDFRobotEnv(gym.Env):
     def reset(self, seed = None, options = None):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
-        self.last_place = []
         p.resetSimulation()
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
