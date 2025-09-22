@@ -1,10 +1,12 @@
 import os
 import time
+from math import sqrt
+
 import pybullet as p
 import pybullet_data
 import numpy as np
 import gymnasium as gym
-
+from sge_FOR_ER.sge.sge import new_mart_terrain
 
 
 class URDFRobotEnv(gym.Env):
@@ -16,7 +18,7 @@ class URDFRobotEnv(gym.Env):
                  render=False,
                  ):
 
-        #super is to ensure that Gym's built-in functionalities are properly initialized.
+        # super is to ensure that Gym's built-in functionalities are properly initialized.
         """
         :param urdf_path: the path of the robot that we need to train
         :param render: determines whether the simulation will display a visual window (p.GUI) or run in headless mode (p.DIRECT).
@@ -31,7 +33,8 @@ class URDFRobotEnv(gym.Env):
         self.flags = p.URDF_USE_SELF_COLLISION
         self.urdf_path = urdf_path
         self.render_mode = render
-        self.start_position = np.array([0, 0, 0.5])  # Store starting position
+        # self.start_position = np.array([12, 10, 22])  # Store starting position
+        self.start_position = np.array([65, 77, 10])
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
         self.f = f
         self.v = v
@@ -49,40 +52,19 @@ class URDFRobotEnv(gym.Env):
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
 
         p.setGravity(0, 0, -9.8)
-        if self.plane==0:
+        if self.plane == 0:
             p.loadURDF("plane.urdf")
         else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+            self.terrainId = new_mart_terrain.world_generation()
 
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            terrainId = p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
-
-        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
         self.movable_joints = []
         limits_low = []
         limits_high = []
-
 
         for joint in range(self.numJoints):
             joint_info = p.getJointInfo(self.roboID, joint)
@@ -100,31 +82,30 @@ class URDFRobotEnv(gym.Env):
 
                 self.movable_joints.append(joint)
 
-
-
         self.num_movable_joints = len(self.movable_joints)
         print(f"Number of Movable Joints: {self.num_movable_joints}")
         self.low_limits = np.array(limits_low)
         self.high_limits = np.array(limits_high)
 
-
-        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,),
+                                           dtype=np.float32)
         # print("\n _____ACTION SPACE_____ \n")
         # print("The Action Space is: ", self.action_space)
 
         # Define Observation Space (Joint Positions + Velocities + Base Position)
         """
         spaces.Box() defines the range of possible observations PPO receives at each time step:
-        
+
             - self.num_movable_joints → Stores:
                 -- Joint Positions (angle for each joint).
                 -- Joint Velocities (velocity).
                 -- +3 → Stores robot base position (X, Y, Z) to track movement.
                 -- +4 → orientation quaternion 
                 -- +6 → linear and angular velocities 
-       
+
         """
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,),
+                                                dtype=np.float32)
         # print("_____OBSERVATION SPACE_____ \n")
         # print("The State Space is: ", self.observation_space)
 
@@ -138,13 +119,22 @@ class URDFRobotEnv(gym.Env):
                 link_index = joint_info[0]
                 p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
 
+        self.last_place = []
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
         self.stepCounter += 1
         if self.render_mode:
             time.sleep(1.0 / 240.0)
-
+        contacts = p.getContactPoints(bodyA=self.roboID, bodyB=self.terrainId)
+        # print("Number of contact points:", len(contacts))
+        if len(contacts) == 0 and len(self.last_place) == 0:
+            self.last_place, _ = p.getBasePositionAndOrientation(self.roboID)
+        elif len(contacts) == 0 and len(self.last_place) != 0:
+            self.position, _ = p.getBasePositionAndOrientation(self.roboID)
+        elif len(contacts) != 0:
+            self.last_place = []
+            self.position = []
         # Apply actions to each movable joint
         for i, joint in enumerate(self.movable_joints):
             joint_info = p.getJointInfo(self.roboID, joint)
@@ -160,19 +150,26 @@ class URDFRobotEnv(gym.Env):
                 p.setJointMotorControl2(self.roboID, joint, p.VELOCITY_CONTROL, force=0.000)
                 p.setJointMotorControl2(self.roboID, joint, p.TORQUE_CONTROL, force=action[i] * self.f)
             else:
-                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i], targetVelocity=self.v, force=self.f) # normal speed is 2.0 radians/s and force is 10
+                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i],
+                                        targetVelocity=self.v,
+                                        force=self.f)  # normal speed is 2.0 radians/s and force is 10
 
         p.stepSimulation()
         robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
+        p.resetDebugVisualizerCamera(
+            cameraDistance=2.5,  # Distance from robot
+            cameraYaw=50,  # Horizontal angle
+            cameraPitch=-35,  # Vertical angle
+            cameraTargetPosition=robot_position  # Where the camera looks at
+        )
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
-        reward, done, truncated = self.compute_reward(robot_position)
+        reward, done, truncated = self.compute_reward(robot_position, contacts)
 
         return observation, reward, done, truncated, {}
 
-
-    def _get_observation(self,robot_position,ori):
+    def _get_observation(self, robot_position, ori):
         try:
             lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
         except Exception as e:
@@ -197,11 +194,12 @@ class URDFRobotEnv(gym.Env):
 
         return observation
 
-
-    def compute_reward(self, current_position):
+    def compute_reward(self, current_position, contacts):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+        reward = sqrt((self.start_position[0] - current_position[0]) ** 2 + (
+                    self.start_position[1] - current_position[1]) ** 2 + (self.start_position[2] - current_position[
+            2]) ** 4)  # Reward moving forward, strong reward for distance travelled
 
         if self.plane == 0:
             # Terminate and punish if robot flies too high
@@ -214,15 +212,21 @@ class URDFRobotEnv(gym.Env):
             done = self.stepCounter >= 4800
             return reward, done, False
         else:
-
+            if not len(self.last_place) == 0:
+                if (self.plane == 1 and (len(contacts) == 0) and (
+                        current_position[2] - self.last_place[2] > 0.3 or current_position[2] - self.last_place[
+                    2] < -0.3)):
+                    return -1.0, True, True
             # End episode after 20 seconds (4800 steps at 240Hz)
             done = self.stepCounter >= 4800
             return reward, done, False
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
+        self.last_place = []
         p.resetSimulation()
+        p.removeBody(self.terrainId)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
@@ -234,29 +238,10 @@ class URDFRobotEnv(gym.Env):
         if self.plane == 0:
             p.loadURDF("plane.urdf")
         else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+            new_mart_terrain.world_generation()
 
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            terrainId = p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
-        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
 
         for i in range(p.getNumJoints(self.roboID)):
             joint_info = p.getJointInfo(self.roboID, i)
@@ -284,7 +269,7 @@ class URDFRobotEnv(gym.Env):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()
-            #time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+            # time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
 
     def getRobotPosition(self):
         """ Returns the current robot position. """

@@ -58,7 +58,10 @@ def train(PATH, name, n_generation, plane):
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
-        total_timesteps = 100000 * n_envs + (50000 * n_generation)
+        if (100000 * n_envs + (50000 * n_generation) < 1000000):
+            total_timesteps = 100000 * n_envs + (50000 * n_generation)
+        else:
+            total_timesteps = 1000000
         model.learn(total_timesteps=total_timesteps)
         model.save(model_path)
 
