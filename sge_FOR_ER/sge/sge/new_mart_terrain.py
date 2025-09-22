@@ -22,7 +22,54 @@ import pybullet as p
 import pybullet_data
 
 # ---------------- USER SETTINGS ----------------
-SCENE_DIR = Path.home() /"Documents"/"GitHub"/"Evolutionary-Robotics-with-GE"/"sge_FOR_ER"/"sge"/"sge"
+def find_scene_dir(default_rel_paths=None):
+    """
+    Return a Path to a candidate scene dir. Strategy:
+      1) use env var SDF_SCENE_DIR if set
+      2) try the script repo root (two parents up from this file)
+      3) try current working dir
+      4) try common /workspace path (for docker/ssh)
+      5) try user's HOME path used in local machine
+      6) fallback to the first existent candidate from default_rel_paths
+    """
+    candidates = []
+    env_dir = os.environ.get("SDF_SCENE_DIR")
+    if env_dir:
+        candidates.append(Path(env_dir))
+
+    # repo root (assumes this script lives inside the repo)
+    try:
+        repo_root = Path(__file__).resolve().parents[0]  # adjust if needed
+        candidates.append(repo_root)
+    except Exception:
+        pass
+
+    # cwd, workspace and home
+    candidates += [Path.cwd(), Path("/workspace"), Path.home()]
+
+    # any additional fallback relative paths you want checked inside repo root
+    if default_rel_paths:
+        for rp in default_rel_paths:
+            candidates.append(Path(rp))
+
+    # return first existing path that contains the SDF or meshes; otherwise return repo_root-like
+    for c in candidates:
+        if c and c.exists():
+            return c.resolve()
+
+    # last resort: return cwd
+    return Path.cwd().resolve()
+
+
+# Use it:
+SCENE_DIR = find_scene_dir([
+    # optional extra candidates you might want to try relative to repository:
+    Path.home() / "PycharmProjects" / "Tese_RE" / "Teste_Tereeno",
+    Path.home() / "Documents" / "GitHub" / "Evolutionary-Robotics-with-GE" / "sge_FOR_ER" / "sge" / "sge",
+    Path("/workspace")  # docker
+])
+print("Using SCENE_DIR =", SCENE_DIR)
+
 SDF_FILENAME = "mars.world"
 MESH_SCALE = [1.0, 1.0, 1.0]
 # ------------------------------------------------
@@ -53,15 +100,46 @@ def parse_sdf_for_meshes_and_heightmaps(sdf_path):
     return {'meshes': meshes, 'heightmaps': heightmaps}
 
 def resolve_uri_to_path(uri, scene_dir):
-    uri = uri.strip()
-    if uri.startswith('file://'):
-        local = uri[len('file://'):]
+    """
+    Resolve URIs robustly:
+      - supports file:// absolute URIs but will search for the same basename in candidate dirs
+      - supports model:// by searching scene_dir/models and scene_dir
+      - searches fallback candidate dirs (scene_dir, repo root, cwd, /workspace, HOME)
+    """
+    uri = str(uri).strip()
+
+    # helper to search by basename in candidate directories
+    def search_for_basename(base_dirs, basename, max_matches=1):
+        matches = []
+        for d in base_dirs:
+            d = Path(d)
+            if not d.exists():
+                continue
+            # use rglob to find files with same name (case sensitive)
+            for found in d.rglob(basename):
+                matches.append(found.resolve())
+                if len(matches) >= max_matches:
+                    return matches
+        return matches
+
+    # If it's a file:// URI, try direct path first, then search by basename
+    if uri.startswith("file://"):
+        local = uri[len("file://"):]
         pth = Path(local)
         if pth.exists():
             return pth.resolve()
-        pth = (scene_dir / local).resolve()
-        return pth if pth.exists() else None
-    if uri.startswith('model://'):
+        # not found at that absolute path on this machine -> try to find the same filename elsewhere
+        basename = Path(local).name
+        candidate_dirs = [scene_dir,
+                          Path(__file__).resolve().parents[2] if '__file__' in globals() else Path.cwd(),
+                          Path.cwd(), Path("/workspace"), Path.home()]
+        matches = search_for_basename(candidate_dirs, basename, max_matches=1)
+        if matches:
+            return matches[0]
+        return None
+
+    # model:// style URIs common in gazebo
+    if uri.startswith("model://"):
         parts = uri.split('/', 3)
         if len(parts) >= 3:
             model_name = parts[2]
@@ -72,19 +150,31 @@ def resolve_uri_to_path(uri, scene_dir):
             cand = scene_dir / model_name / tail
             if cand.exists():
                 return cand.resolve()
-            matches = list(scene_dir.rglob(f"*{model_name}*"))
-            if matches:
-                cand = matches[0] / tail
-                if cand.exists():
-                    return cand.resolve()
+            # search for the model folder by name inside scene_dir or repo
+            candidate_dirs = [scene_dir, Path(__file__).resolve().parents[2] if '__file__' in globals() else Path.cwd(), Path.home(), Path("/workspace")]
+            for d in candidate_dirs:
+                matches = list(Path(d).rglob(f"*{model_name}*"))
+                for m in matches:
+                    candidate = (m / tail).resolve() if tail else m.resolve()
+                    if candidate.exists():
+                        return candidate
         return None
+
+    # direct path (relative or absolute) - try as-is
     pth = Path(uri)
     if pth.exists():
         return pth.resolve()
+
+    # try relative to the scene_dir
     pth = (scene_dir / uri).resolve()
     if pth.exists():
         return pth
-    return None
+
+    # last resort: search for this basename in candidate dirs
+    basename = Path(uri).name
+    candidate_dirs = [scene_dir, Path(__file__).resolve().parents[2] if '__file__' in globals() else Path.cwd(), Path.cwd(), Path("/workspace"), Path.home()]
+    matches = search_for_basename(candidate_dirs, basename, max_matches=1)
+    return matches[0] if matches else None
 
 def convert_dae_to_obj(dae_path, obj_path):
     """Try assimp CLI then trimesh/pycollada fallback. Return True on success."""
