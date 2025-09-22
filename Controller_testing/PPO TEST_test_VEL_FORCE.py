@@ -38,12 +38,14 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             print("------------- ------------- ------------- ------------- ")
             print(f"------------- Evaluating Robot number {name} Force {force}  Velocity {velocity} -------------")
             print("------------- ------------- ------------- ------------- ")
-            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/testVandF_robooooooooooot0_VELO_5_FORCE_0_5.pkl"
 
-            ROBOT_URDF_PATH = f"best_gen_000.urdf"
+            number = 10
+            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}.pkl"
+
+            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}.urdf"
             #ROBOT_URDF_PATH = "../robots/robot_GEN_2_number_33.urdf"
             #model_name = f"{path_2}/robot_GEN_2_number_33"
-            model_name = f"./models_PPO_Test_NEW_REWARD/testVandF_robooooooooooot0_VELO_5_FORCE_0_5"
+            model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}"
 
             # # Ensure the model file exists
             # if not os.path.exists(model_name):

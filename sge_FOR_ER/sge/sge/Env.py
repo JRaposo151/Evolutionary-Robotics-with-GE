@@ -1,9 +1,12 @@
 import os
 import time
+from math import sqrt
+
 import pybullet as p
 import pybullet_data
 import numpy as np
 import gymnasium as gym
+from sge_FOR_ER.sge.sge import new_mart_terrain
 
 
 
@@ -31,7 +34,8 @@ class URDFRobotEnv(gym.Env):
         self.flags = p.URDF_USE_SELF_COLLISION
         self.urdf_path = urdf_path
         self.render_mode = render
-        self.start_position = np.array([0, 0, 0.5])  # Store starting position
+        #self.start_position = np.array([12, 10, 22])  # Store starting position
+        self.start_position = np.array([65, 77, 10])
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
         self.f = f
         self.v = v
@@ -52,27 +56,7 @@ class URDFRobotEnv(gym.Env):
         if self.plane==0:
             p.loadURDF("plane.urdf")
         else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            self.terrainId =  p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(self.terrainId , [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(self.terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(self.terrainId, -1, lateralFriction=1.0)
+            self.terrainId = new_mart_terrain.world_generation()
 
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
@@ -173,6 +157,12 @@ class URDFRobotEnv(gym.Env):
 
         p.stepSimulation()
         robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
+        p.resetDebugVisualizerCamera(
+            cameraDistance=2.5,  # Distance from robot
+            cameraYaw=50,  # Horizontal angle
+            cameraPitch=-35,  # Vertical angle
+            cameraTargetPosition=robot_position  # Where the camera looks at
+        )
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
@@ -210,7 +200,7 @@ class URDFRobotEnv(gym.Env):
     def compute_reward(self, current_position, contacts):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+        reward = sqrt((self.start_position[0] - current_position[0]) ** 2 + (self.start_position[1] - current_position[1]) ** 2 + (self.start_position[2] - current_position[2]) ** 4)  # Reward moving forward, strong reward for distance travelled
 
         if self.plane == 0:
             # Terminate and punish if robot flies too high
@@ -237,6 +227,7 @@ class URDFRobotEnv(gym.Env):
         self.stepCounter = 0
         self.last_place = []
         p.resetSimulation()
+        p.removeBody(self.terrainId)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
@@ -248,27 +239,7 @@ class URDFRobotEnv(gym.Env):
         if self.plane == 0:
             p.loadURDF("plane.urdf")
         else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            terrainId = p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+            new_mart_terrain.world_generation()
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 

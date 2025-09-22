@@ -1,5 +1,0 @@
-Evaluation Results:
-
-Model 0 Velocity: 5 Force: 0.5 ZIP: models_PPO_Test/testVandF_robot0.zip 
-  Mean Reward = -1.00 +/- 0.00
-
