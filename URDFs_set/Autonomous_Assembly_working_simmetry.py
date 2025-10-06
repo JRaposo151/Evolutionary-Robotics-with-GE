@@ -160,29 +160,29 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
 
                 elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_REVO":
                     if faceSet_Covered == "TOP":
-                        sub_child.attrib["rpy"] = "0 1.55 0"
+                        sub_child.attrib["rpy"] = "0 1.5708 0"
                     elif faceSet_Covered == "BOTTOM":
-                        sub_child.attrib["rpy"] = "0 -1.55 0"
+                        sub_child.attrib["rpy"] = "0 -1.5708 0"
                     elif faceSet_Covered == "":
-                        sub_child.attrib["rpy"] = "1.55 0 0"
+                        sub_child.attrib["rpy"] = "1.5708 0 0"
                     elif faceSet_Covered == "FRONT" and sim:
                         sub_child.attrib["rpy"] = "0 0 3.11"
 
                 elif sub_child.tag == "origin" and root.attrib["name"] == "L_JOINT_CONT_HZ":
                     if faceSet_Covered == "BACK":
                         if sim:
-                            sub_child.attrib["rpy"] = "-1.55 0 0"
+                            sub_child.attrib["rpy"] = "-1.5708 0 0"
                             sub_child.attrib["xyz"] = "0 0.02 0"
                         else:
-                            sub_child.attrib["rpy"] = "1.55 0 0"
+                            sub_child.attrib["rpy"] = "1.5708 0 0"
                             sub_child.attrib["xyz"] = "0 -0.02 0"
 
                     if faceSet_Covered == "FRONT":
                         if sim:
-                            sub_child.attrib["rpy"] = "1.55 0 0"
+                            sub_child.attrib["rpy"] = "1.5708 0 0"
                             sub_child.attrib["xyz"] = "0 -0.02 0"
                         else:
-                            sub_child.attrib["rpy"] = "-1.55 0 0"
+                            sub_child.attrib["rpy"] = "-1.5708 0 0"
                             sub_child.attrib["xyz"] = "0 0.02 0"
 
                     if faceSet_Covered == "TOP":
@@ -191,28 +191,28 @@ def JointRepresentation_conctLimb(robot, sphere, representative_Joint, blackSphe
                         sub_child.attrib["rpy"] = "3.15 0 0"
                         sub_child.attrib["xyz"] = "0 0 -0.02 "
                     if faceSet_Covered == "RIGHT":
-                        sub_child.attrib["rpy"] = "0 1.55 0"
+                        sub_child.attrib["rpy"] = "0 1.5708 0"
                         sub_child.attrib["xyz"] = "0.02 0 0"
                     if faceSet_Covered == "LEFT":
-                        sub_child.attrib["rpy"] = "0 -1.55 0"
+                        sub_child.attrib["rpy"] = "0 -1.5708 0"
                         sub_child.attrib["xyz"] = "-0.02 0 0"
 
 
 
                 elif faceSet_Covered == "BACK":
                     if sim:
-                        sub_child.attrib["rpy"] = "-1.55 0 0"
+                        sub_child.attrib["rpy"] = "-1.5708 0 0"
                     else:
-                        sub_child.attrib["rpy"] = "1.55 0 0"
+                        sub_child.attrib["rpy"] = "1.5708 0 0"
                 elif faceSet_Covered == "FRONT":
                     if sim:
-                        sub_child.attrib["rpy"] = "1.55 0 0"
+                        sub_child.attrib["rpy"] = "1.5708 0 0"
                     else:
-                        sub_child.attrib["rpy"] = "-1.55 0 0"
+                        sub_child.attrib["rpy"] = "-1.5708 0 0"
                 elif faceSet_Covered == "LEFT":
-                    sub_child.attrib["rpy"] = "0 -1.55 0"
+                    sub_child.attrib["rpy"] = "0 -1.5708 0"
                 elif faceSet_Covered == "RIGHT":
-                    sub_child.attrib["rpy"] = "0 1.55 0"
+                    sub_child.attrib["rpy"] = "0 1.5708 0"
                 elif faceSet_Covered == "BOTTOM":
                     sub_child.attrib["rpy"] = "0 3.15 0"
 
