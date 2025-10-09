@@ -276,9 +276,8 @@ class URDFRobotEnv(gym.Env):
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
     #
-    # def close(self):
-    #     """ Disconnect PyBullet. """
-    #     p.disconnect()
+    def close(self):
+         p.disconnect()
 
 
 # if __name__ == '__main__':
