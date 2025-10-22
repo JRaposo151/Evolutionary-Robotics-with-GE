@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 import sys
 from pathlib import Path
 
@@ -38,9 +39,35 @@ def evaluate(ind, eval_func, name, n_generation):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
     tree.hshow()
+    failed_build = False
     """AQUI CONSTRUIR O ROBO COM AS TREES"""
     #Autonomous_Assembly_working.assemblement(tree, name)
-    Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+    try:
+        # Attempt to build the robot
+        Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+
+    except Exception as e:
+        print(f"[ASSEMBLY ERROR] Failed to assemble robot_{name}: {e}")
+        failed_build = True
+        # Save failed robot tree or partial URDF if available
+        failed_dir = "failed_assemblies"
+        os.makedirs(failed_dir, exist_ok=True)
+        urdf_path = os.path.join("/workspace/URDFs_set", f"robot_{name}.urdf")
+        if os.path.exists(urdf_path):
+            shutil.copy(urdf_path, os.path.join(failed_dir, f"robot_{name}.urdf"))
+            print(f"[SAVED] Partial or failed URDF saved: {urdf_path}")
+        else:
+            print(f"[WARN] No URDF found for robot_{name} — skipping save.")
+            ind['fitness'] = 0
+            ind['fitness'] = float(ind['fitness'])
+            failed_build = False
+            ind['phenotype'] = phen
+            ind['mapping_values'] = mapping_values
+            ind['tree_depth'] = tree_depth
+            ind['name'] = f"robot_{name}.urdf"
+            return
+
+
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"

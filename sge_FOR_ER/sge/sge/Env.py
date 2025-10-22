@@ -51,29 +51,6 @@ class URDFRobotEnv(gym.Env):
         p.setGravity(0, 0, -9.8)
         if self.plane==0:
             p.loadURDF("plane.urdf")
-        else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            terrainId = p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 
@@ -233,29 +210,6 @@ class URDFRobotEnv(gym.Env):
         p.setGravity(0, 0, -9.8)
         if self.plane == 0:
             p.loadURDF("plane.urdf")
-        else:
-            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
-            terrainSize = 256  # Assuming the terrain is 256x256
-            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
-
-            # Create the terrain shape
-            terrainShape = p.createCollisionShape(
-                shapeType=p.GEOM_HEIGHTFIELD,
-                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
-                heightfieldTextureScaling=terrainSize / 2,
-                heightfieldData=heightfieldData,
-                numHeightfieldRows=terrainSize,
-                numHeightfieldColumns=terrainSize
-            )
-
-            # Create the terrain object
-            terrainId = p.createMultiBody(0, terrainShape)
-            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
-            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
-
-            # Set the friction coefficient of the terrain
-            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
-
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 
         for i in range(p.getNumJoints(self.roboID)):
