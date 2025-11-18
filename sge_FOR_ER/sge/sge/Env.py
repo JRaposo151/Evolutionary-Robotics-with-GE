@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from math import sqrt
@@ -33,8 +34,6 @@ class URDFRobotEnv(gym.Env):
         self.flags = p.URDF_USE_SELF_COLLISION
         self.urdf_path = urdf_path
         self.render_mode = render
-        # self.start_position = np.array([12, 10, 22])  # Store starting position
-        self.start_position = np.array([65, 77, 10])
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
         self.f = f
         self.v = v
@@ -50,15 +49,17 @@ class URDFRobotEnv(gym.Env):
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+        p.setPhysicsEngineParameter(numSubSteps=3)
 
         p.setGravity(0, 0, -9.8)
         if self.plane == 0:
-            p.loadURDF("plane.urdf")
+            self.start_position = np.array([0,0,0.5])
+            self.terrainId = p.loadURDF("plane.urdf")
         else:
+            self.start_position = np.array([65, 77, 10])
             self.terrainId = new_mart_terrain.world_generation()
 
-        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
-                                 flags=self.flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,flags=self.flags)
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
@@ -269,7 +270,7 @@ class URDFRobotEnv(gym.Env):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()
-            # time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+            #time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
 
     def getRobotPosition(self):
         """ Returns the current robot position. """

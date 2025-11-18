@@ -322,7 +322,14 @@ def world_generation():
     # load meshes (deduplicated internally)
     if parsed['meshes']:
         terrain_bodies = load_meshes_into_pybullet(parsed['meshes'], scene_dir, MESH_SCALE)
-
+        # print("terrain bodies:", terrain_bodies)
+        # if terrain_bodies:
+        #     for b in terrain_bodies:
+        #         try:
+        #             aabb = p.getAABB(b)
+        #             print("body", b, "AABB:", aabb)
+        #         except Exception as e:
+        #             print("getAABB error for", b, e)
     # fallback try any mesh file in folder if nothing loaded
     if not terrain_bodies:
         any_meshes = list(scene_dir.glob("*.obj")) + list(scene_dir.glob("*.dae")) + list(scene_dir.glob("*.stl"))

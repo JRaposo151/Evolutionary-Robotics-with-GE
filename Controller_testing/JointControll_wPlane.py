@@ -11,7 +11,7 @@ def test_joint(joint_index, roboID):
     dt = 1.0 / 240.0  # your sim timestep
     duration = 3.0  # seconds in each direction
 
-    forces = [0.3]
+    forces = [0.5]
     velocities = [5]
 
     for _ in range(500):
@@ -101,7 +101,7 @@ robots = 0
 # Test each joint one by one
 for i in range(0,1):
 
-    robot_path = f"../robots/robot_6.urdf"
+    robot_path = f"robots_ind/best_gen_020.urdf"
     robot_id = p.loadURDF(robot_path, startPos, startOrientation, useFixedBase=False, flags=flags)
 
     # Get number of joints
