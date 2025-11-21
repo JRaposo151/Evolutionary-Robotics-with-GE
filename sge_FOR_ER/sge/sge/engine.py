@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 import sys
 from pathlib import Path
 
@@ -19,7 +20,7 @@ from sge_FOR_ER.sge.sge.parameters import (
     set_parameters,
     load_parameters
 )
-from URDFs_set import Autonomous_Assembly_working, Autonomous_Assembly_working_simmetry
+from URDFs_set import Autonomous_Assembly_working_simmetry
 
 
 def generate_random_individual():
@@ -38,13 +39,38 @@ def evaluate(ind, eval_func, name, n_generation):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
     tree.hshow()
+    failed_build = False
     """AQUI CONSTRUIR O ROBO COM AS TREES"""
-    #Autonomous_Assembly_working.assemblement(tree, name)
-    Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+    try:
+        # Attempt to build the robot
+        Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+
+    except Exception as e:
+        print(f"[ASSEMBLY ERROR] Failed to assemble robot_{name}: {e}")
+        failed_build = True
+        # Save failed robot tree or partial URDF if available
+        failed_dir = "failed_assemblies"
+        os.makedirs(failed_dir, exist_ok=True)
+        urdf_path = os.path.join("/workspace/URDFs_set", f"robot_{name}.urdf")
+        if os.path.exists(urdf_path):
+            shutil.copy(urdf_path, os.path.join(failed_dir, f"robot_{name}.urdf"))
+            print(f"[SAVED] Partial or failed URDF saved: {urdf_path}")
+        else:
+            print(f"[WARN] No URDF found for robot_{name} — skipping save.")
+            ind['fitness'] = 0
+            ind['fitness'] = float(ind['fitness'])
+            failed_build = False
+            ind['phenotype'] = phen
+            ind['mapping_values'] = mapping_values
+            ind['tree_depth'] = tree_depth
+            ind['name'] = f"robot_{name}.urdf"
+            return
+
+
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
-    plane = 1                       # here is to switch between planes: horizontal or mountains (0 and 1)
+    plane = 1                       # here is to switch between planes: horizontal or mountains
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
 
@@ -100,7 +126,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     # else:
     #     print("Directory is not empty")
     #     # === 1. Load saved population from previous generation ===
-    #     checkpoint_path = directory + "/run_1/iteration_6.json"
+    #     checkpoint_path = directory + "/run_1/iteration_0.json"
     #     with open(checkpoint_path, "r") as f:
     #         population = json.load(f)
     #
@@ -110,6 +136,9 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     #     # === 3. Get the last robot number from the loaded population ===
     #     last_ind = population[-1]  # last individual in the list
     #     robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
+    #
+    #     #Extract the number from the name string
+    #     robot_number = int(robot_name.split("_")[-1].split(".")[0]) + 1
     while it <= params['GENERATIONS']:
         mutation_rate = it / params['GENERATIONS']
         crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
@@ -139,7 +168,6 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
                 ni = tournament(population, params['TSIZE'])
             ni = mutate(ni, mutation_rate)
             new_population.append(ni)
-
 
         population = new_population
         robots = "../examples/robots"
@@ -202,10 +230,8 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
         it += 1
         robot_number = 0
 
-
     """
     PLOTTING THE RESULTS
     """
     logger.plot_progress_report()
-
 

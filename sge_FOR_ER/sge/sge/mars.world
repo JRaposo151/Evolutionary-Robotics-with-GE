@@ -30,14 +30,14 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>file:///home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/sge/mars_topografi.dae</uri>
+              <uri>file:///workspace/sge_FOR_ER/sge/sge/mars_topografi.dae</uri>
             </mesh>
           </geometry>
         </visual>
         <collision name='collision1'>
           <geometry>
             <mesh>
-              <uri>file:///home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/sge/mars_topografi.dae</uri>
+              <uri>file:///workspace/sge_FOR_ER/sge/sge/mars_topografi.dae</uri>
             </mesh>
           </geometry>
           <max_contacts>10</max_contacts>
