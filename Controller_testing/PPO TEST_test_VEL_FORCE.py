@@ -19,12 +19,12 @@ os.makedirs(results_dir, exist_ok=True)
 
 def URDFRobotEnv_make(ROBOT_URDF_PATH, render):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, 5, 0.5, plane = 1, render=render)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, 5, 0.5, plane = 0, render=render)
         return env
     return _init
 
 
-forces = ['2', '3', '14', '17', '18', '19']
+forces = ['010']
 # Open the file for writing evaluation results
 with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força.txt"), 'w') as f:
     name = 0
@@ -35,9 +35,9 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
         print(f"------------- Evaluating Robot number {force} Force {0.5}  Velocity {5} -------------")
         print("------------- ------------- ------------- ------------- ")
 
-        vec_path_2 = f"robots_vec/robot_GEN_10_number_{force}.pkl"
-        ROBOT_URDF_PATH = f"robots/robot_GEN_10_number_{force}.urdf"
-        model_name = f"robots_brains/robot_GEN_10_number_{force}"
+        vec_path_2 = f"robots_ind/best_gen_{force}.pkl"
+        ROBOT_URDF_PATH = f"robots_ind/best_gen_{force}.urdf"
+        model_name = f"robots_ind/best_gen_{force}"
 
         # # Ensure the model file exists
         # if not os.path.exists(model_name):
