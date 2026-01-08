@@ -9,7 +9,6 @@ import gymnasium as gym
 from sge_FOR_ER.sge.sge import new_mart_terrain
 
 
-
 class URDFRobotEnv(gym.Env):
     def __init__(self,
                  urdf_path,
@@ -40,6 +39,11 @@ class URDFRobotEnv(gym.Env):
         self.f = f
         self.v = v
         self.plane = plane
+
+        self.ANG_SAFE = 10.0
+        self.ANG_HIGH = 25.0
+        self.ANG_MAX = 40.0  # beyond this is definitely bad
+
         # Connect to PyBullet
         if self.render_mode:
             p.connect(p.GUI)
@@ -168,7 +172,9 @@ class URDFRobotEnv(gym.Env):
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
-        reward, done, truncated = self.compute_reward(robot_position,contacts)
+        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        ang_speed = np.linalg.norm(ang_vel)
+        reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
 
         return observation, reward, done, truncated, {}
 
@@ -198,11 +204,26 @@ class URDFRobotEnv(gym.Env):
 
         return observation
 
+    def angular_speed_penalty(self, ang_speed):
+        # print(ang_speed)
+        if ang_speed <= self.ANG_SAFE:
+            return 0.0
 
-    def compute_reward(self, current_position, contacts):
+        elif ang_speed <= self.ANG_HIGH:
+            # quadratic soft penalty
+            excess = ang_speed - self.ANG_HIGH
+            return -0.1 * excess ** 2
+
+        else:
+            # hard penalty for uncontrolled spin
+            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+
+    def compute_reward(self, current_position, contacts, ang_speed):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = sqrt((self.start_position[0] - current_position[0]) ** 2 + (self.start_position[1] - current_position[1]) ** 2 + (self.start_position[2] - current_position[2]) ** 4)  # Reward moving forward, strong reward for distance travelled
+        ang_speed_condition = self.angular_speed_penalty(ang_speed)
+        reward = self.start_position[1] - current_position[1] + self.start_position[2] - current_position[
+            2] + ang_speed_condition  # Reward moving forward, strong reward for distance travelled
 
         if self.plane == 0:
             # Terminate and punish if robot flies too high
@@ -279,10 +300,10 @@ class URDFRobotEnv(gym.Env):
         """ Returns the current robot position. """
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
-    #
-    # def close(self):
-    #     """ Disconnect PyBullet. """
-    #     p.disconnect()
+
+    def close(self):
+        """ Disconnect PyBullet. """
+        p.disconnect()
 
 
 # if __name__ == '__main__':

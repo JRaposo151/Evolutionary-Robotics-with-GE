@@ -11,8 +11,8 @@ class URDFRobotEnv(gym.Env):
                  urdf_path,
                  v,
                  f,
+                 plane,
                  render=False,
-                 plane = 0
                  ):
 
         # super is to ensure that Gym's built-in functionalities are properly initialized.
@@ -34,23 +34,51 @@ class URDFRobotEnv(gym.Env):
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
         self.f = f
         self.v = v
+        self.plane = plane
+
+        self.ANG_SAFE = 10.0
+        self.ANG_HIGH = 25.0
+        self.ANG_MAX = 40.0  # beyond this is definitely bad
+
+
         # Connect to PyBullet
         if self.render_mode:
-            self.cliente = p.connect(p.GUI)
+            p.connect(p.GUI)
         else:
-            self.cliente = p.connect(p.DIRECT)
+            p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+        #p.setPhysicsEngineParameter(numSubSteps=3)
 
         p.setGravity(0, 0, -9.8)
-        p.loadURDF("plane.urdf")
+        if self.plane == 0:
+            p.loadURDF("plane.urdf")
+        else:
+            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
+            terrainSize = 256  # Assuming the terrain is 256x256
+            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
 
-        if not os.path.exists(urdf_path):
-            raise FileNotFoundError(f"ERROR: URDF file not found: {urdf_path}")
+            # Create the terrain shape
+            terrainShape = p.createCollisionShape(
+                shapeType=p.GEOM_HEIGHTFIELD,
+                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+                heightfieldTextureScaling=terrainSize / 2,
+                heightfieldData=heightfieldData,
+                numHeightfieldRows=terrainSize,
+                numHeightfieldColumns=terrainSize
+            )
+
+            # Create the terrain object
+            terrainId = p.createMultiBody(0, terrainShape)
+            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+
+            # Set the friction coefficient of the terrain
+            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
                                  flags=self.flags)
@@ -116,9 +144,6 @@ class URDFRobotEnv(gym.Env):
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
-        if getattr(self, 'failed_robot', False):
-            return np.zeros(self.observation_space.shape), 0.0, True, True, {}
-
         self.stepCounter += 1
         if self.render_mode:
             time.sleep(1.0 / 240.0)
@@ -147,7 +172,9 @@ class URDFRobotEnv(gym.Env):
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
-        reward, done, truncated = self.compute_reward(robot_position)
+        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        ang_speed = np.linalg.norm(ang_vel)
+        reward, done, truncated = self.compute_reward(robot_position, ang_speed)
 
         return observation, reward, done, truncated, {}
 
@@ -158,12 +185,7 @@ class URDFRobotEnv(gym.Env):
             print(f"[ERROR] getBaseVelocity failed: {e}")
             raise RuntimeError("Invalid robot: getBaseVelocity failed — aborting training and assigning fitness 0.0")
 
-            # Converta cada pedaço em vetor 1-D:
-        pos_arr = np.array(robot_position, dtype=np.float32).reshape(-1)
-        ori_arr = np.array(ori, dtype=np.float32).reshape(-1)
-        lin_vel_arr = np.array(lin_vel, dtype=np.float32).reshape(-1)
-        ang_vel_arr = np.array(ang_vel, dtype=np.float32).reshape(-1)
-
+        # Get new state
         if self.num_movable_joints == 0:
             joint_states_position = np.zeros(3, dtype=np.float32)
             joint_states_velocity = np.zeros(3, dtype=np.float32)
@@ -172,35 +194,53 @@ class URDFRobotEnv(gym.Env):
             joint_states_position = np.array([s[0] for s in js], dtype=np.float32).reshape(-1)
             joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32).reshape(-1)
 
-        observation = np.concatenate([
-            pos_arr,
-            ori_arr,
-            lin_vel_arr,
-            ang_vel_arr,
-            joint_states_position,
-            joint_states_velocity
-        ]).astype(np.float32)
-
+        observation = np.hstack(
+            [np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position,
+             joint_states_velocity]).astype(np.float32)
         # Garante que nunca é escalar:
         if observation.ndim == 0:
             observation = observation.reshape(1)
 
         return observation
 
-    def compute_reward(self, current_position):
+
+    def angular_speed_penalty(self, ang_speed):
+        #print(ang_speed)
+        if ang_speed <= self.ANG_SAFE:
+            return 0.0
+
+        elif ang_speed <= self.ANG_HIGH:
+            # quadratic soft penalty
+            excess = ang_speed - self.ANG_HIGH
+            return -0.1 * excess ** 2
+
+        else:
+            # hard penalty for uncontrolled spin
+            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+
+    def compute_reward(self, current_position, ang_speed):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+        ang_speed_condition = self.angular_speed_penalty(ang_speed)
+        reward = distance_traveled + ang_speed_condition  # Reward moving forward, strong reward for distance travelled
+        print("DISTANCE: ", distance_traveled)
+        print("REWARD:", reward)
 
-        # Terminate and punish if robot flies too high
-        if current_position[2] > 0.3:  # adjust threshold depending on spawn height
-            return -1.0, True, True  # strong punishment, end episode
+        if self.plane == 0:
+            # Terminate and punish if robot flies too high
+            if current_position[2] > 0.3:  # adjust threshold depending on spawn height
+                return -1.0, True, True  # strong punishment, end episode
 
-        if current_position[2] < 0:
-            return reward, False, True  # End episode
-        # End episode after 20 seconds (4800 steps at 240Hz)
-        done = self.stepCounter >= 4800
-        return reward, done, False
+            if current_position[2] < 0:
+                return reward, False, True  # End episode
+            # End episode after 20 seconds (4800 steps at 240Hz)
+            done = self.stepCounter >= 4800
+            return reward, done, False
+        else:
+
+            # End episode after 20 seconds (4800 steps at 240Hz)
+            done = self.stepCounter >= 4800
+            return reward, done, False
 
     def reset(self, seed=None, options=None):
         """ Reset the robot to a new starting position. """
@@ -214,7 +254,31 @@ class URDFRobotEnv(gym.Env):
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
 
         p.setGravity(0, 0, -9.8)
-        p.loadURDF("plane.urdf")
+        if self.plane == 0:
+            p.loadURDF("plane.urdf")
+        else:
+            heightData = np.loadtxt("../examples/terrain_data.csv", delimiter=',')
+            terrainSize = 256  # Assuming the terrain is 256x256
+            heightfieldData = heightData.flatten()  # Flatten to be applied on the PyBullet's function createCollisionShape
+
+            # Create the terrain shape
+            terrainShape = p.createCollisionShape(
+                shapeType=p.GEOM_HEIGHTFIELD,
+                meshScale=[2.8, 2.8, 40.0],  # Scale the terrain size and height
+                heightfieldTextureScaling=terrainSize / 2,
+                heightfieldData=heightfieldData,
+                numHeightfieldRows=terrainSize,
+                numHeightfieldColumns=terrainSize
+            )
+
+            # Create the terrain object
+            terrainId = p.createMultiBody(0, terrainShape)
+            p.resetBasePositionAndOrientation(terrainId, [0, 0, 8.5], [0, 0, 0, 1])  # Position
+            p.changeVisualShape(terrainId, -1, rgbaColor=[1, 1, 1, 1])  # Color
+
+            # Set the friction coefficient of the terrain
+            p.changeDynamics(terrainId, -1, lateralFriction=1.0)
+
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
                                  flags=self.flags)
 
@@ -240,16 +304,20 @@ class URDFRobotEnv(gym.Env):
             self.episode_done = True
             return np.zeros(self.observation_space.shape, dtype=np.float32), {}
 
-    def let_robot_fall(self, steps=250):
+    def let_robot_fall(self, steps=500):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()
-            time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+            # time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
 
     def getRobotPosition(self):
         """ Returns the current robot position. """
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
+    #
+    # def close(self):
+    #     """ Disconnect PyBullet. """
+    #     p.disconnect()
 
 # if __name__ == '__main__':
 #     i = 0

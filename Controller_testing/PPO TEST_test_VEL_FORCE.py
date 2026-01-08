@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-from Env import URDFRobotEnv
+from Env_plane_1 import URDFRobotEnv
 import pybullet as p
 
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
@@ -40,12 +40,12 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             print("------------- ------------- ------------- ------------- ")
 
             number = 10
-            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}.pkl"
+            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_0{20}.pkl"
 
-            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}.urdf"
+            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_0{20}.urdf"
             #ROBOT_URDF_PATH = "../robots/robot_GEN_2_number_33.urdf"
             #model_name = f"{path_2}/robot_GEN_2_number_33"
-            model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_00{8}"
+            model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_0{20}"
 
             # # Ensure the model file exists
             # if not os.path.exists(model_name):

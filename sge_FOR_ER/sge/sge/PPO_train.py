@@ -69,7 +69,7 @@ def train(PATH, name, n_generation, plane):
 
         model_path = os.path.join(output_folder_vec, f"{name}.pkl")
         env.save(model_path)
-        p.disconnect()
+        #p.disconnect()
         env.close()
 
 
