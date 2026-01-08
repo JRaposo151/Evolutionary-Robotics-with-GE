@@ -1,5 +1,5 @@
 from stable_baselines3 import PPO
-from Env import URDFRobotEnv
+from Env_plane_1 import URDFRobotEnv
 import random
 import torch
 import numpy as np
@@ -11,7 +11,7 @@ save_folder = "models_PPO_Test_NEW_REWARD"
 os.makedirs(save_folder, exist_ok=True)
 
 
-seed = 10
+seed = 42
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
@@ -45,9 +45,9 @@ name = 0
 forces = [0.5]
 velocities = [5]
 
-def URDFRobotEnv_make(ROBOT_URDF_PATH, render):
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render,plane):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, 5, 0.5, render=render)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render, plane=plane)
         return env
     return _init
 
@@ -58,12 +58,12 @@ for force in forces:
             print("------------- ------------- ------------- ------------- ")
             print(f'------------- Training Robot number {name} -------------')
             print("------------- ------------- ------------- ------------- ")
-            ROBOT_URDF_PATH = f"../robots/robot_GEN_0_number_0.urdf"  # ESTE É O ROBO
+            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_020.urdf"  # ESTE É O ROBO
 
 
             print(":::::VELOCITY:", velocity)
             print(":::::FORCE:", force)
-            env = [URDFRobotEnv_make(ROBOT_URDF_PATH, render = False)]
+            env = [URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render = False, plane= 1)]
             #env = SubprocVecEnv(env)
             env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
             env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True)
@@ -82,13 +82,13 @@ for force in forces:
                     device= "cuda" if torch.cuda.is_available() else "cpu",
                     )
 
-            model.learn(total_timesteps=1000000)
+            model.learn(total_timesteps=300000)
 
             # turn 0.05 → "0_05", 0.1 → "0_1", 1.0 → "1_0" (or "1" if you prefer)
             force_str = str(force).rstrip('0').rstrip('.')  # e.g. "0.05"→"0.05"; "1.0"→"1"
             force_str = force_str.replace('.', '_')  # e.g. "0.05"→"0_05"
-            model_path = os.path.join(save_folder, f"testVandF_robooooooooooot{name}_VELO_{velocity}_FORCE_{force_str}")
+            model_path = os.path.join(save_folder, f"best_gen_020")
             model.save(model_path)
-            model_path = os.path.join(save_folder, f"testVandF_robooooooooooot{name}_VELO_{velocity}_FORCE_{force_str}.pkl")
+            model_path = os.path.join(save_folder, f"best_gen_020.pkl")
             env.save(model_path)
             env.close()
