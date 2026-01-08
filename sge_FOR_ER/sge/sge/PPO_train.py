@@ -39,7 +39,7 @@ def train(PATH, name, n_generation):
         print('Using device:', 'cuda' if torch.cuda.is_available() else 'cpu', ', device number:',
               torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
-        n_envs = 4
+        n_envs = 1
         env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False) for _ in range(n_envs)]
         env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
         env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
@@ -58,15 +58,16 @@ def train(PATH, name, n_generation):
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
-        total_timesteps = 100000 * n_envs + (50000 * n_generation)
+        if (100000 * n_envs + (10000 * n_generation) < 1000000):
+            total_timesteps = 100000 * n_envs + (10000 * n_generation)
+        else:
+            total_timesteps = 1000000
         model.learn(total_timesteps=total_timesteps)
         model.save(model_path)
 
 
         model_path = os.path.join(output_folder_vec, f"{name}.pkl")
         env.save(model_path)
-        p.disconnect()
+        #p.disconnect()
         env.close()
-
-
 

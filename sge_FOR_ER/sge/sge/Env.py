@@ -6,7 +6,6 @@ import numpy as np
 import gymnasium as gym
 
 
-
 class URDFRobotEnv(gym.Env):
     def __init__(self,
                  urdf_path,
@@ -15,7 +14,7 @@ class URDFRobotEnv(gym.Env):
                  render=False,
                  ):
 
-        #super is to ensure that Gym's built-in functionalities are properly initialized.
+        # super is to ensure that Gym's built-in functionalities are properly initialized.
         """
         :param urdf_path: the path of the robot that we need to train
         :param render: determines whether the simulation will display a visual window (p.GUI) or run in headless mode (p.DIRECT).
@@ -34,6 +33,9 @@ class URDFRobotEnv(gym.Env):
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
         self.f = f
         self.v = v
+        self.ANG_SAFE = 10.0
+        self.ANG_HIGH = 25.0
+        self.ANG_MAX = 40.0  # beyond this is definitely bad
         # Connect to PyBullet
         if self.render_mode:
             self.cliente = p.connect(p.GUI)
@@ -52,14 +54,14 @@ class URDFRobotEnv(gym.Env):
         if not os.path.exists(urdf_path):
             raise FileNotFoundError(f"ERROR: URDF file not found: {urdf_path}")
 
-        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
         self.movable_joints = []
         limits_low = []
         limits_high = []
-
 
         for joint in range(self.numJoints):
             joint_info = p.getJointInfo(self.roboID, joint)
@@ -77,31 +79,30 @@ class URDFRobotEnv(gym.Env):
 
                 self.movable_joints.append(joint)
 
-
-
         self.num_movable_joints = len(self.movable_joints)
         print(f"Number of Movable Joints: {self.num_movable_joints}")
         self.low_limits = np.array(limits_low)
         self.high_limits = np.array(limits_high)
 
-
-        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,),
+                                           dtype=np.float32)
         # print("\n _____ACTION SPACE_____ \n")
         # print("The Action Space is: ", self.action_space)
 
         # Define Observation Space (Joint Positions + Velocities + Base Position)
         """
         spaces.Box() defines the range of possible observations PPO receives at each time step:
-        
+
             - self.num_movable_joints → Stores:
                 -- Joint Positions (angle for each joint).
                 -- Joint Velocities (velocity).
                 -- +3 → Stores robot base position (X, Y, Z) to track movement.
                 -- +4 → orientation quaternion 
                 -- +6 → linear and angular velocities 
-       
+
         """
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,),
+                                                dtype=np.float32)
         # print("_____OBSERVATION SPACE_____ \n")
         # print("The State Space is: ", self.observation_space)
 
@@ -114,7 +115,6 @@ class URDFRobotEnv(gym.Env):
             if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
                 link_index = joint_info[0]
                 p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
-
 
     def step(self, action):
         """ Apply action to the robot and compute reward. """
@@ -140,19 +140,23 @@ class URDFRobotEnv(gym.Env):
                 p.setJointMotorControl2(self.roboID, joint, p.VELOCITY_CONTROL, force=0.000)
                 p.setJointMotorControl2(self.roboID, joint, p.TORQUE_CONTROL, force=action[i] * self.f)
             else:
-                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i], targetVelocity=self.v, force=self.f) # normal speed is 2.0 radians/s and force is 10
+                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i],
+                                        targetVelocity=self.v,
+                                        force=self.f)  # normal speed is 2.0 radians/s and force is 10
 
         p.stepSimulation()
         robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
-        reward, done, truncated = self.compute_reward(robot_position)
+        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        ang_speed = np.linalg.norm(ang_vel)
+
+        reward, done, truncated = self.compute_reward(robot_position, ang_speed)
 
         return observation, reward, done, truncated, {}
 
-
-    def _get_observation(self,robot_position,ori):
+    def _get_observation(self, robot_position, ori):
         try:
             lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
         except Exception as e:
@@ -188,11 +192,25 @@ class URDFRobotEnv(gym.Env):
 
         return observation
 
+    def angular_speed_penalty(self, ang_speed):
+        # print(ang_speed)
+        if ang_speed <= self.ANG_SAFE:
+            return 0.0
 
-    def compute_reward(self, current_position):
+        elif ang_speed <= self.ANG_HIGH:
+            # quadratic soft penalty
+            excess = ang_speed - self.ANG_HIGH
+            return -0.1 * excess ** 2
+
+        else:
+            # hard penalty for uncontrolled spin
+            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+
+    def compute_reward(self, current_position, ang_speed):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
-        reward = distance_traveled  # Reward moving forward, strong reward for distance travelled
+        ang_speed_condition = self.angular_speed_penalty(ang_speed)
+        reward = distance_traveled + ang_speed_condition
 
         # Terminate and punish if robot flies too high
         if current_position[2] > 0.3:  # adjust threshold depending on spawn height
@@ -204,7 +222,7 @@ class URDFRobotEnv(gym.Env):
         done = self.stepCounter >= 4800
         return reward, done, False
 
-    def reset(self, seed = None, options = None):
+    def reset(self, seed=None, options=None):
         """ Reset the robot to a new starting position. """
         self.stepCounter = 0
         p.resetSimulation()
@@ -217,7 +235,8 @@ class URDFRobotEnv(gym.Env):
 
         p.setGravity(0, 0, -9.8)
         p.loadURDF("plane.urdf")
-        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
 
         for i in range(p.getNumJoints(self.roboID)):
             joint_info = p.getJointInfo(self.roboID, i)
@@ -252,6 +271,8 @@ class URDFRobotEnv(gym.Env):
         robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
         return robot_position
 
+    def close(self):
+        p.disconnect()
 # if __name__ == '__main__':
 #     i = 0
 #     ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"  # ESTE É O ROBO
