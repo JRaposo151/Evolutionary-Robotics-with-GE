@@ -113,8 +113,14 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
         last_ind = population[-1]  # last individual in the list
         robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
 
-        # Extract the number from the name string
-        robot_number = int(robot_name.split("_")[-1].split(".")[0]) + 1
+        # Extract all robot numbers from the population
+        robot_numbers = [
+            int(ind['name'].split("_")[-1].split(".")[0])
+            for ind in population
+        ]
+
+        # Get the biggest robot number and increment
+        robot_number = max(robot_numbers) + 1
 
 
     while it <= params['GENERATIONS']:
