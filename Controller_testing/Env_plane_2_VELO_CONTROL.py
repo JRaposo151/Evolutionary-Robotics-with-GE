@@ -1,0 +1,369 @@
+import os
+import time
+from math import sqrt
+import pybullet as p
+import pybullet_data
+import numpy as np
+import gymnasium as gym
+from sge_FOR_ER.sge.sge import new_mart_terrain
+
+
+class URDFRobotEnv(gym.Env):
+    def __init__(self,
+                 urdf_path,
+                 v,
+                 f,
+                 plane,
+                 render=False,
+                 ):
+
+        # super is to ensure that Gym's built-in functionalities are properly initialized.
+        """
+        :param urdf_path: the path of the robot that we need to train
+        :param render: determines whether the simulation will display a visual window (p.GUI) or run in headless mode (p.DIRECT).
+
+        Why do we use super()?
+            - Ensures that the URDFRobotEnv class inherits all necessary behavior from gym.Env.
+            - Allows gym.Env to manage things like resetting, stepping, and rendering properly.
+            - If we don't use super(), Gym might not recognize the environment correctly when training with PPO.
+        """
+        super(URDFRobotEnv, self).__init__()
+
+        self.flags = p.URDF_USE_SELF_COLLISION
+        self.urdf_path = urdf_path
+        self.render_mode = render
+        # self.start_position = np.array([12, 10, 22])  # Store starting position
+
+        self.f = f
+        self.v = v
+        self.plane = plane
+        self.elapsed_steps =0
+        self.total_distance = 0.0
+        self.ANG_SAFE = 10.0
+        self.ANG_HIGH = 20.0
+        self.ANG_MAX = 40.0  # beyond this is definitely bad
+
+        # Connect to PyBullet
+        if self.render_mode:
+            p.connect(p.GUI)
+        else:
+            p.connect(p.DIRECT)
+
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+        # Show contact points in PyBullet
+        p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
+        p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+        p.setPhysicsEngineParameter(numSubSteps=3)
+
+
+        p.setGravity(0, 0, -9.8)
+        if self.plane == 0:
+            self.terrainId = p.loadURDF("plane.urdf")
+            self.start_position = [0, 0, 0.5]
+            self.start_orientation = [0, 0, 0.7071, 0.7071]
+        else:
+            self.terrainId = new_mart_terrain.world_generation()
+            # Set moderate friction for the ground
+            p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
+            self.start_position = np.array([65, 75, 8.5])
+            self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 1.5]))
+
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
+
+        self.y = self.start_position[1]
+        # Identify Movable Joints
+        self.numJoints = p.getNumJoints(self.roboID)
+        self.movable_joints = []
+        limits_low = []
+        limits_high = []
+
+        for joint in range(self.numJoints):
+            joint_info = p.getJointInfo(self.roboID, joint)
+            lower_limit, upper_limit = joint_info[8:10]
+
+            link_name = p.getJointInfo(self.roboID,joint)
+            print(joint, joint_info[12].decode("utf-8"))
+            p.changeDynamics(self.roboID, joint, lateralFriction=1)
+
+            # Identify revolute joints with limits
+            if p.getJointInfo(self.roboID, joint)[2] in [0]:
+                type = joint_info[12]
+                type_str = type.decode("utf-8")
+                if "continuous" in type_str:
+                    limits_low.append(-1)
+                    limits_high.append(1)
+                else:
+                    limits_low.append(lower_limit)
+                    limits_high.append(upper_limit)
+
+                self.movable_joints.append(joint)
+
+        self.num_movable_joints = len(self.movable_joints)
+        print(f"Number of Movable Joints: {self.num_movable_joints}")
+        self.low_limits = np.array(limits_low)
+        self.high_limits = np.array(limits_high)
+
+        self.action_space = gym.spaces.Box(low=self.low_limits, high=self.high_limits, shape=(self.num_movable_joints,),
+                                           dtype=np.float32)
+        # print("\n _____ACTION SPACE_____ \n")
+        # print("The Action Space is: ", self.action_space)
+
+        # Define Observation Space (Joint Positions + Velocities + Base Position)
+        """
+        spaces.Box() defines the range of possible observations PPO receives at each time step:
+
+            - self.num_movable_joints → Stores:
+                -- Joint Positions (angle for each joint).
+                -- Joint Velocities (velocity).
+                -- +3 → Stores robot base position (X, Y, Z) to track movement.
+                -- +4 → orientation quaternion 
+                -- +6 → linear and angular velocities 
+
+        """
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(self.num_movable_joints * 2 + 13,),
+                                                dtype=np.float32)
+        # print("_____OBSERVATION SPACE_____ \n")
+        # print("The State Space is: ", self.observation_space)
+
+        self.stepCounter = 0  # Track steps per episode
+        for i in range(p.getNumJoints(self.roboID)):
+            joint_info = p.getJointInfo(self.roboID, i)
+            link_name = joint_info[12].decode("utf-8")
+
+            # Disable ALL collisions for links that are just visual joints
+            if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                link_index = joint_info[0]
+                p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
+
+        self.last_place = []
+
+    def step(self, action):
+        info = {}
+        """ Apply action to the robot and compute reward. """
+        self.stepCounter += 1
+        if self.render_mode:
+            time.sleep(1.0 / 240.0)
+        contacts = p.getContactPoints(bodyA=self.roboID, bodyB=self.terrainId)
+        # print("Number of contact points:", len(contacts))
+        if len(contacts) == 0 and len(self.last_place) == 0:
+            self.last_place, _ = p.getBasePositionAndOrientation(self.roboID)
+        elif len(contacts) == 0 and len(self.last_place) != 0:
+            self.position, _ = p.getBasePositionAndOrientation(self.roboID)
+        elif len(contacts) != 0:
+            self.last_place = []
+            self.position = []
+        # Apply actions to each movable joint
+        for i, joint in enumerate(self.movable_joints):
+            joint_info = p.getJointInfo(self.roboID, joint)
+            type = joint_info[12]
+            """ 
+            p.setJointMotorControl2(self.robot, joint, p.POSITION_CONTROL, targetPosition=target_position)
+
+                -> Moves the joint to target_position using position control.
+                -> Other control modes (TORQUE_CONTROL, VELOCITY_CONTROL).
+            """
+            type_str = type.decode("utf-8")
+            if "continuous" in type_str:
+                p.setJointMotorControl2(self.roboID, joint, p.VELOCITY_CONTROL, targetVelocity=action[i] * self.v, force=self.f)
+            else:
+                p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i],
+                                        force=self.f)  # normal speed is 2.0 radians/s and force is 10
+
+        p.stepSimulation()
+        robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
+        # p.resetDebugVisualizerCamera(cameraDistance=0.5,
+        #                              cameraYaw=50,
+        #                              cameraPitch=-10,
+        #                              cameraTargetPosition=robot_position)
+        observation = self._get_observation(robot_position, ori)
+        truncated = False
+        # Compute reward
+        lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        ang_speed = np.linalg.norm(ang_vel)
+        reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
+        if self.plane == 0:
+            distance_traveled = self.y + robot_position[1]
+        elif self.plane == 1:
+            distance_traveled = self.y - robot_position[1]
+        # Compute step distance and accumulate
+        self.stepCounter += 1
+        self.total_distance = distance_traveled
+
+
+        info = {
+            "total_distance": self.total_distance,
+            "elapsed_steps": self.stepCounter,
+        }
+        return observation, reward, done, truncated, info
+
+    def _get_observation(self, robot_position, ori):
+        try:
+            lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
+        except Exception as e:
+            print(f"[ERROR] getBaseVelocity failed: {e}")
+            raise RuntimeError("Invalid robot: getBaseVelocity failed — aborting training and assigning fitness 0.0")
+
+        # Get new state
+        if self.num_movable_joints == 0:
+            joint_states_position = np.zeros(3, dtype=np.float32)
+            joint_states_velocity = np.zeros(3, dtype=np.float32)
+        else:
+            js = p.getJointStates(self.roboID, self.movable_joints)
+            joint_states_position = np.array([s[0] for s in js], dtype=np.float32).reshape(-1)
+            joint_states_velocity = np.array([s[1] for s in js], dtype=np.float32).reshape(-1)
+
+        observation = np.hstack(
+            [np.array(robot_position), np.array(ori), np.array(lin_vel), np.array(ang_vel), joint_states_position,
+             joint_states_velocity]).astype(np.float32)
+        # Garante que nunca é escalar:
+        if observation.ndim == 0:
+            observation = observation.reshape(1)
+
+        return observation
+
+
+    def angular_speed_penalty(self, ang_speed):
+        # print(ang_speed)
+        if ang_speed <= self.ANG_SAFE:
+            return 0.0
+
+        elif ang_speed <= self.ANG_HIGH:
+            # quadratic soft penalty
+            excess = ang_speed - self.ANG_HIGH
+            return -0.1 * excess ** 2
+
+        else:
+            # hard penalty for uncontrolled spin
+            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+
+
+    def compute_reward(self, current_position, contacts, ang_speed):
+        ang_speed_condition = self.angular_speed_penalty(ang_speed)
+        if self.plane == 0:
+            if ang_speed_condition > 0:
+                reward = current_position[1] - self.start_position[1] #- ang_speed_condition
+            else:
+                reward = current_position[1] - self.start_position[1] #+ ang_speed_condition
+            # reward = (self.start_position[1] - current_position[1])  # Reward moving forward, strong reward for distance travelled
+            self.start_position[1] = current_position[1]
+            self.elapsed_steps += 1
+        else:
+            reward = self.start_position[1] - current_position[1] #+ ang_speed_condition
+            # reward = (self.start_position[1] - current_position[1])  # Reward moving forward, strong reward for distance travelled
+            self.start_position[1] = current_position[1]
+            self.elapsed_steps += 1
+
+        #print(reward)
+        if self.plane == 0:
+            # Terminate and punish if robot flies too high
+            if current_position[2] > 0.3:  # adjust threshold depending on spawn height
+                return -1.0, True, True  # strong punishment, end episode
+
+            if current_position[2] < 0:
+                return reward, False, True  # End episode
+            # End episode after 20 seconds (4800 steps at 240Hz)
+            done = self.stepCounter >= 4800
+
+            if abs(self.start_position[0] - current_position[0] > 1):
+                self.total_distance = self.y + current_position[1]
+                info = {
+                    "total_distance": self.total_distance,
+                    "elapsed_steps": self.elapsed_steps,
+                }
+                return reward, False, True
+
+
+            return reward, done, False
+
+        else:
+
+            if abs(self.start_position[0] - current_position[0] > 1):
+                self.total_distance = self.y - current_position[1]
+                info = {
+                    "total_distance": self.total_distance,
+                    "elapsed_steps": self.elapsed_steps,
+                }
+                return reward, False, True
+                #return (self.start_position[1] - current_position[1])-1, False, True
+            # End episode after 20 seconds (4800 steps at 240Hz)
+            done = self.stepCounter >= 4800
+            #self.start_position[1] = current_position[1]
+            return reward, done, False
+
+    def reset(self, seed=None, options=None):
+        """ Reset the robot to a new starting position. """
+        self.stepCounter = 0
+        self.elapsed_steps = 0
+        self.last_place = []
+        p.resetSimulation()
+        p.removeBody(self.terrainId)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
+        # Show contact points in PyBullet
+        p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
+        p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+        p.setPhysicsEngineParameter(numSubSteps=3)
+
+
+        p.setGravity(0, 0, -9.8)
+        if self.plane == 0:
+            self.terrainId = p.loadURDF("plane.urdf")
+            self.start_position = [0, 0, 0.5]
+            self.start_orientation = [0, 0, 0.7071, -0.7071]
+        else:
+            self.terrainId = new_mart_terrain.world_generation()
+            p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
+            self.start_position = [65, 75, 10]
+
+        self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
+                                 flags=self.flags)
+
+        for i in range(p.getNumJoints(self.roboID)):
+            joint_info = p.getJointInfo(self.roboID, i)
+            link_name = joint_info[12].decode("utf-8")
+
+            # Disable ALL collisions for links that are just visual joints
+            if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                link_index = joint_info[0]
+                p.setCollisionFilterGroupMask(self.roboID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
+            p.changeDynamics(self.roboID, i, lateralFriction=1)
+
+        self.let_robot_fall()
+        # Return new observation
+        observation = self._get_observation(self.start_position, self.start_orientation)
+        try:
+            # load robot, reset sim, etc.
+            return observation, {}
+        except Exception as e:
+            print(f"[WARN] Env reset failed: {e}")
+            # Mark as failed robot
+            self.failed_robot = True
+            self.episode_done = True
+            return np.zeros(self.observation_space.shape, dtype=np.float32), {}
+
+    def let_robot_fall(self, steps=300):
+        """ Runs a few simulation steps to let the robot fall naturally. """
+        for _ in range(steps):
+            p.stepSimulation()
+            # time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+
+    def getRobotPosition(self):
+        """ Returns the current robot position. """
+        robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
+        return robot_position
+
+    #
+    def close(self):
+        """ Disconnect PyBullet. """
+        p.disconnect()
+
+# if __name__ == '__main__':
+#     i = 0
+#     ROBOT_URDF_PATH = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"  # ESTE É O ROBO
+#     startOrientation = p.getQuaternionFromEuler([0, 0, 0])
+#     startPos = [0, 0, 0.2]
+#     flags = p.URDF_USE_SELF_COLLISION
+#
+#     env = URDFRobotEnv(ROBOT_URDF_PATH, startPos, startOrientation, flags, render=True)

@@ -276,6 +276,99 @@ class Grammar:
                     self._recursive_mapping(mapping_rules, positions_to_map, next_sym, current_depth + 1, output, new_bodies, bodyN, face_counter))
         return max(depths)
 
+    def _new_recursive_mapping_new_branches_names(self, mapping_rules, positions_to_map, current_sym, current_depth, output, new_bodies, bodyN,
+                           face_counter):
+        global node_counter, tree, parent
+        depths = [current_depth]
+        if current_sym[1] == self.T:
+            output.append(current_sym[0])
+            if current_sym[0] == "ε":
+                node_name = f"{node_counter} {current_sym[0]}"
+                node_counter += 1
+                Node(node_name, parent=parent)
+                # Starting a new non-terminal symbol.
+            elif current_sym[0] != "body_Link_CUBE":
+                """ Another terminal symbol instead body and empty  """
+                node_name = f"{node_counter} {current_sym[0]}"
+                node_counter += 1
+                new_parent = Node(node_name, parent=parent)
+                parent = new_parent
+            else:
+                """ Here will be the body adiction """
+                node_name = f"{node_counter} {current_sym[0]}"
+                node_counter += 1
+                new_parent = Node(node_name, parent=parent)
+                parent = new_parent
+                new_bodies.append(new_parent)
+        else:
+            if current_sym[0] == "<FaceSet>":
+                # print(bodyN)
+                # print(face_counter)
+                # print(f"CUBO {parent.node_name} FACESET {face_counter}")
+                parent = new_bodies[bodyN]
+                # print(new_bodies[0].node_name)
+                if face_counter == 5 and not parent.node_name == new_bodies[0].node_name:
+                    new_bodies.pop()
+                    bodyN -= 1
+                    face_counter = 0
+                if face_counter == 6:
+                    new_bodies.pop()
+                    bodyN -= 1
+                    face_counter = 0
+            current_sym_pos = self.ordered_non_terminals.index(current_sym[0])
+            choices = self.grammar[current_sym[0]]
+            size_of_gene = self.count_number_of_options_in_production()
+            if positions_to_map[current_sym_pos] >= len(mapping_rules[current_sym_pos]):
+                if current_depth > self.max_depth:
+                    # print "True"
+                    possibilities = self.shortest_path[current_sym][1:]
+                    rule = random.choice(possibilities)
+                    expansion_possibility = self.grammar[current_sym[0]].index(rule)
+                else:
+                    expansion_possibility = random.randint(0, size_of_gene[current_sym[0]] - 1)
+
+                """
+                During evolution, the genetic operators might change the genotype in a way that more integers will be necessary
+                than the ones that we have available. When this happens new derivation rules are selected randomly and added to the
+                genotype of the individual (lines 3-11).
+
+                PAGINA 8 DO PAPER DO PROF NUNO
+
+                Aqui a linha 252 aumenta o genotype/mapping_rules
+                """
+
+                mapping_rules[current_sym_pos].append(expansion_possibility)
+            current_production = mapping_rules[current_sym_pos][positions_to_map[current_sym_pos]]
+            positions_to_map[current_sym_pos] += 1
+            next_to_expand = choices[current_production]
+            for next_sym in next_to_expand:
+                if next_sym[0] == "<FaceSet>":
+                    face_counter += 1  # it helps debugging
+                    # print(face_counter)
+                    parent = new_bodies[bodyN]
+                elif next_sym[0] == "body_Link_CUBE":
+                    bodyN += 1
+                    face_counter = 0
+                depths.append(
+                    self._recursive_mapping(mapping_rules, positions_to_map, next_sym, current_depth + 1, output,
+                                            new_bodies, bodyN, face_counter))
+        return max(depths)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @staticmethod
     def python_filter(txt):
         """ Create correct python syntax.

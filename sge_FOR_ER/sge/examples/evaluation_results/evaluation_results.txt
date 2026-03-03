@@ -1,0 +1,3 @@
+Evaluation Results:
+
+Model robot_GEN_0_number_1 Velocity: 5 Force: 0.5 ZIP: robots_brains/robot_GEN_0_number_1.zip.zip Median Reward = 1.12

@@ -1,107 +1,118 @@
-import pybullet as p
+#!/usr/bin/env python3
 import time
-import pybullet_data
 import os
-import math
-import numpy as np
-from gym import spaces
+import pybullet as p
+import pybullet_data
 
-# Connect to PyBullet GUI
-p.connect(p.GUI)
-p.connect(p.DIRECT)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setGravity(0, 0, -9.8)
-planeId = p.loadURDF("plane.urdf")
+# ----------------------------
+# Config
+# ----------------------------
+DT = 1.0 / 240.0
+TOTAL_SEC = 20.0
 
-startOrientation = p.getQuaternionFromEuler([0, 0, 0])
-startPos = [0, 0, 0.2]
+# Fixed in the air
+START_POS = [0, 0, 0.8]
+START_ORN = p.getQuaternionFromEuler([0, 0, 0])
 
-# Robot path, modify to get all the robot instead of just one TODO
-i = 0
-urdf_path = f"/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/corrected_robot{i}.urdf"
-if not os.path.exists(urdf_path):
-    print(f"ERROR: URDF file not found: {urdf_path}")
-else:
-    roboID = p.loadURDF(urdf_path, startPos, startOrientation, useFixedBase=False)
-    p.changeDynamics(roboID, -1, mass=1.0)
+# Position-control settings
+FORCE = 60.0
+AMP = 0.6                 # radians (safe-ish default)
+HOLD_NEG_SEC = 0.5
+HOLD_POS_SEC = 0.5
+TRANSITION_SEC = 0.2
 
-# Get the number of movable joints in the robot
-num_joints = p.getNumJoints(roboID)
-print("Number of total joints:", num_joints)
-
-movable_joints = []
-movable_joints_revolute = []
-movable_joints_continuous = [] # this joint types are revolute but the continuous on the name is because they spin like a wheel
-
-for joint in range(num_joints):
-    joint_info = p.getJointInfo(roboID, joint)
-    joint_type = joint_info[2]
-    print(joint_type)
-    lower_limit, upper_limit = joint_info[8:10]
-    if lower_limit == -1000 and upper_limit == 1000:
-        movable_joints_continuous.append(joint)
-        movable_joints.append(joint)
-    elif p.getJointInfo(roboID, joint)[2] in [0]: # Joint type: 0=revolute, 1=prismatic, 2=spherical, 3=planar, 4=fixed
-        movable_joints_revolute.append(joint)
-        movable_joints.append(joint)
+# Laikago URDF inside pybullet_data
+LAIKAGO_URDF = "laikago/laikago_toes.urdf"  # common in pybullet_data; fallback below if missing
 
 
-# Define action limits for revolute joints (from URDF limits)
-revolute_limits_low = [-0.75] * len(movable_joints_revolute)  # Min values for revolute joints (radians)
-revolute_limits_high = [0.75] * len(movable_joints_revolute) # Max values for revolute joints (radians)
-
-# Define limits for continuous joints (full rotation allowed)
-continuous_limits_low = [-1000] * len(movable_joints_continuous)
-continuous_limits_high = [1000] * len(movable_joints_continuous)
-
-# Combine limits: Only keep revolute and continuous joints
-low_limits = np.array(revolute_limits_low + continuous_limits_low)
-high_limits = np.array(revolute_limits_high + continuous_limits_high)
-
-# Define action space
-action_space = spaces.Box(low=low_limits, high=high_limits, dtype=np.float32) #TODO falta o shape
-
-print("Action Space:", action_space)
-print("Min Joint Values:", action_space.low)
-print("Max Joint Values:", action_space.high)
+def load_laikago():
+    """Try common laikago URDF paths in pybullet_data."""
+    candidates = [
+        "laikago/laikago_toes.urdf",
+        "laikago/laikago.urdf",
+    ]
+    for rel in candidates:
+        abs_path = os.path.join(pybullet_data.getDataPath(), rel)
+        if os.path.exists(abs_path):
+            return rel
+    raise FileNotFoundError("Could not find laikago URDF in pybullet_data (tried laikago_toes.urdf and laikago.urdf).")
 
 
-# Run simulation and command each joint with a sine wave target position
-start_time = time.time()
-while time.time() - start_time < 20:  # Run for 20 seconds
-    action_index = 0  # To track correct action values
-    # Sample a random action (within allowed joint limits)
-    random_action = action_space.sample()
-    #print("Random Action:", random_action)
-    for joint in movable_joints:
+def main():
+    p.connect(p.GUI)
+    p.setAdditionalSearchPath(pybullet_data.getDataPath())
+    p.setGravity(0, 0, -9.8)
+    p.setTimeStep(DT)
+    p.loadURDF("plane.urdf")
 
-        joint_info = p.getJointInfo(roboID, joint)
-        joint_type = joint_info[2]  # Joint type: 0=revolute, 1=prismatic, 2=spherical, 3=planar, 4=fixed
+    urdf_rel = load_laikago()
+    laikago_id = p.loadURDF(urdf_rel, START_POS, START_ORN, useFixedBase=True)
 
-        if joint_type == p.JOINT_FIXED:
-            continue  # Skip fixed joints
+    # ----------------------------
+    # Select joints that are NOT "continuous" by NAME (revolute only)
+    # ----------------------------
+    non_continuous = []
+    for j in range(p.getNumJoints(laikago_id)):
+        info = p.getJointInfo(laikago_id, j)
+        jtype = info[2]
+        joint_name = info[1].decode("utf-8").lower()
+        link_name = info[12].decode("utf-8").lower()
+        if jtype == p.JOINT_REVOLUTE:
+            if ("continuous" not in joint_name) and ("continuous" not in link_name):
+                non_continuous.append(j)
 
-        # Compute a target position as a function of time and joint index
-        p.setJointMotorControl2(bodyIndex=roboID,
-                                jointIndex=joint,
-                                controlMode=p.POSITION_CONTROL,
-                                targetPosition=random_action[action_index],
-                                force=500)
-        action_index += 1  # Move to next action value
+    print("Loaded:", urdf_rel)
+    print("Total joints:", p.getNumJoints(laikago_id))
+    print("Non-continuous joints (by name):", non_continuous)
+    print("Count:", len(non_continuous))
 
-    p.stepSimulation()
-    time.sleep(1. / 240.)
+    # Camera
+    p.resetDebugVisualizerCamera(
+        cameraDistance=1.5,
+        cameraYaw=45,
+        cameraPitch=-25,
+        cameraTargetPosition=[START_POS[0], START_POS[1], START_POS[2] - 0.3],
+    )
 
-cubePos, cubeOrn = p.getBasePositionAndOrientation(roboID)
-print(f"Final base position : {cubePos}")
-print(f"Final orientation: {cubeOrn}")
+    # Helpers
+    def set_joints(target_pos: float):
+        for j in non_continuous:
+            p.setJointMotorControl2(
+                bodyIndex=laikago_id,
+                jointIndex=j,
+                controlMode=p.POSITION_CONTROL,
+                targetPosition=float(target_pos),
+                force=float(FORCE),
+            )
 
-"""EUCLIDIAN DISTANCE para calcular a distancia em linha reta do ponto de partida"""
-distance_traveled = math.sqrt((cubePos[0] - startPos[0])**2 +
-                              (cubePos[1] - startPos[1])**2 +
-                              (cubePos[2] - startPos[2])**2)
+    def ramp(from_pos: float, to_pos: float, duration_sec: float):
+        steps = max(1, int(duration_sec / DT))
+        for k in range(steps):
+            a = (k + 1) / steps
+            target = (1 - a) * from_pos + a * to_pos
+            set_joints(target)
+            p.stepSimulation()
+            time.sleep(DT)
+
+    def hold(pos: float, duration_sec: float):
+        steps = max(1, int(duration_sec / DT))
+        for _ in range(steps):
+            set_joints(pos)
+            p.stepSimulation()
+            time.sleep(DT)
+
+    # Run alternating -AMP / +AMP
+    t_end = time.time() + TOTAL_SEC
+    hold(0.0, 0.25)
+
+    while time.time() < t_end:
+        hold(-AMP, HOLD_NEG_SEC)
+        ramp(-AMP, +AMP, TRANSITION_SEC)
+        hold(+AMP, HOLD_POS_SEC)
+        ramp(+AMP, -AMP, TRANSITION_SEC)
+
+    p.disconnect()
 
 
-print(f"Distance Traveled: {distance_traveled} meters")
-p.disconnect()
-
+if __name__ == "__main__":
+    main()

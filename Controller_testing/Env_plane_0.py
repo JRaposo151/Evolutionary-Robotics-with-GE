@@ -205,7 +205,7 @@ class URDFRobotEnv(gym.Env):
 
 
     def angular_speed_penalty(self, ang_speed):
-        #print(ang_speed)
+        print(ang_speed)
         if ang_speed <= self.ANG_SAFE:
             return 0.0
 
@@ -216,15 +216,19 @@ class URDFRobotEnv(gym.Env):
 
         else:
             # hard penalty for uncontrolled spin
-            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+            if -5.0 - 0.5 * (ang_speed - self.ANG_MAX) > 0:
+                return 5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+            else:
+                return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
 
     def compute_reward(self, current_position, ang_speed):
         distance_traveled = current_position[1] - self.start_position[1]
         # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
         ang_speed_condition = self.angular_speed_penalty(ang_speed)
+
         reward = distance_traveled + ang_speed_condition  # Reward moving forward, strong reward for distance travelled
-        print("DISTANCE: ", distance_traveled)
-        print("REWARD:", reward)
+        #print("DISTANCE: ", distance_traveled)
+        #print("REWARD:", ang_speed_condition)
 
         if self.plane == 0:
             # Terminate and punish if robot flies too high

@@ -1,7 +1,6 @@
 import os
 import time
 from math import sqrt
-
 import pybullet as p
 import pybullet_data
 import numpy as np
@@ -34,16 +33,20 @@ class URDFRobotEnv(gym.Env):
         self.urdf_path = urdf_path
         self.render_mode = render
         # self.start_position = np.array([12, 10, 22])  # Store starting position
-        self.start_position = np.array([65, 77, 10])
-        self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 0]))
+        self.start_position = np.array([65, 75, 8.5])
+        self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 1.5]))
         self.f = f
         self.v = v
         self.plane = plane
 
         self.ANG_SAFE = 10.0
-        self.ANG_HIGH = 25.0
+        self.ANG_HIGH = 20.0
         self.ANG_MAX = 40.0  # beyond this is definitely bad
-
+        self.distance_traveled_previous = 0
+        self.total_distance = 0.0
+        self.elapsed_steps = 0
+        self.velo_medium = []
+        self.WINDOW = 240  # 1 second if timeStep=1/240
         # Connect to PyBullet
         if self.render_mode:
             p.connect(p.GUI)
@@ -57,6 +60,7 @@ class URDFRobotEnv(gym.Env):
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
         p.setPhysicsEngineParameter(numSubSteps=3)
 
+
         p.setGravity(0, 0, -9.8)
         if self.plane == 0:
             p.loadURDF("plane.urdf")
@@ -65,6 +69,11 @@ class URDFRobotEnv(gym.Env):
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False,
                                  flags=self.flags)
+
+
+        # Set moderate friction for the ground
+        p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
+
 
         # Identify Movable Joints
         self.numJoints = p.getNumJoints(self.roboID)
@@ -75,6 +84,12 @@ class URDFRobotEnv(gym.Env):
         for joint in range(self.numJoints):
             joint_info = p.getJointInfo(self.roboID, joint)
             lower_limit, upper_limit = joint_info[8:10]
+
+            link_name = p.getJointInfo(self.roboID,joint)
+            print(joint, joint_info[12].decode("utf-8"))
+
+            p.changeDynamics(self.roboID, joint, lateralFriction=1)
+
             # Identify revolute joints with limits
             if p.getJointInfo(self.roboID, joint)[2] in [0]:
                 type = joint_info[12]
@@ -128,6 +143,7 @@ class URDFRobotEnv(gym.Env):
         self.last_place = []
 
     def step(self, action):
+        info = {}
         """ Apply action to the robot and compute reward. """
         self.stepCounter += 1
         if self.render_mode:
@@ -157,8 +173,7 @@ class URDFRobotEnv(gym.Env):
                 p.setJointMotorControl2(self.roboID, joint, p.TORQUE_CONTROL, force=action[i] * self.f)
             else:
                 p.setJointMotorControl2(self.roboID, joint, p.POSITION_CONTROL, targetPosition=action[i],
-                                        targetVelocity=self.v,
-                                        force=self.f)  # normal speed is 2.0 radians/s and force is 10
+                                                          force=30)
 
         p.stepSimulation()
         robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
@@ -167,9 +182,36 @@ class URDFRobotEnv(gym.Env):
         # Compute reward
         lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
         ang_speed = np.linalg.norm(ang_vel)
-        reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
 
-        return observation, reward, done, truncated, {}
+
+        self.velo_medium.append(ang_speed)
+        if len(self.velo_medium) == self.WINDOW:
+            ang_speed_avg = float(np.mean(self.velo_medium))
+            self.velo_medium.clear()
+
+            # use the averaged value
+            ang_speed = ang_speed_avg
+            reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
+            print(ang_speed)
+        else:
+            reward, done, truncated = self.compute_reward(robot_position, contacts, 0)
+
+        pos, _ = p.getBasePositionAndOrientation(self.roboID)
+        p.resetDebugVisualizerCamera(cameraDistance=1,
+                                     cameraYaw=50,
+                                     cameraPitch=-10,
+                                     cameraTargetPosition=pos)
+        distance_traveled = self.start_position[1] - pos[1]
+        # Compute step distance and accumulate
+        self.elapsed_steps += 1
+        self.total_distance = distance_traveled
+
+
+        info = {
+            "total_distance": self.total_distance,
+            "elapsed_steps": self.elapsed_steps,
+        }
+        return observation, reward, done, truncated, info
 
     def _get_observation(self, robot_position, ori):
         try:
@@ -211,12 +253,9 @@ class URDFRobotEnv(gym.Env):
             return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
 
     def compute_reward(self, current_position, contacts, ang_speed):
-        distance_traveled = current_position[1] - self.start_position[1]
-        # distance_traveled = np.linalg.norm(np.array(current_position) - self.start_position)
         ang_speed_condition = self.angular_speed_penalty(ang_speed)
-        reward = self.start_position[1] - current_position[1] + self.start_position[2] - current_position[
-            2] + ang_speed_condition  # Reward moving forward, strong reward for distance travelled
-
+        reward = self.start_position[1] - current_position[1] + ang_speed_condition  # Reward moving forward, strong reward for distance travelled
+        #print(reward)
         if self.plane == 0:
             # Terminate and punish if robot flies too high
             if current_position[2] > 0.3:  # adjust threshold depending on spawn height
@@ -228,12 +267,10 @@ class URDFRobotEnv(gym.Env):
             done = self.stepCounter >= 4800
             return reward, done, False
         else:
-            if not len(self.last_place) == 0:
-                if (self.plane == 1 and (len(contacts) == 0) and (
-                        current_position[2] - self.last_place[2] > 0.3 or current_position[2] - self.last_place[
-                    2] < -0.3)):
-                    return -1.0, True, True
+            if abs(self.start_position[0] - current_position[0] > 0.5):
+                return -5, False, True
             # End episode after 20 seconds (4800 steps at 240Hz)
+            self.distance_traveled_previous= self.start_position[1] - current_position[1]
             done = self.stepCounter >= 4800
             return reward, done, False
 
@@ -243,13 +280,15 @@ class URDFRobotEnv(gym.Env):
         self.last_place = []
         p.resetSimulation()
         p.removeBody(self.terrainId)
-
+        self.distance_traveled_previous = 0
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
         p.setPhysicsEngineParameter(numSubSteps=3)
+        p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
+        self.velo_medium = []
 
         p.setGravity(0, 0, -9.8)
         if self.plane == 0:
@@ -282,7 +321,7 @@ class URDFRobotEnv(gym.Env):
             self.episode_done = True
             return np.zeros(self.observation_space.shape, dtype=np.float32), {}
 
-    def let_robot_fall(self, steps=500):
+    def let_robot_fall(self, steps=350):
         """ Runs a few simulation steps to let the robot fall naturally. """
         for _ in range(steps):
             p.stepSimulation()

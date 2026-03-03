@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import pybullet as p
 import pybullet_data
+from bigtree import preorder_iter
 
 from sge_FOR_ER.sge.sge import grammar as grammar
 from sge_FOR_ER.sge.sge import logger as logger
@@ -14,6 +15,7 @@ from datetime import datetime
 from tqdm import tqdm
 from sge_FOR_ER.sge.sge.operators.recombination import crossover
 from sge_FOR_ER.sge.sge.operators.mutation import mutate
+from sge_FOR_ER.sge.sge.operators.recombination_new_1 import crossover
 from sge_FOR_ER.sge.sge.operators.selection import tournament
 from sge_FOR_ER.sge.sge.parameters import (
     params,
@@ -120,32 +122,31 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_number = 0
     import json
     import os
-    directory = '/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/examples/dumps/Test'
-    if not os.listdir(directory):
-        print("Directory is empty")
-    else:
-        print("Directory is not empty")
-        # === 1. Load saved population from previous generation ===
-        checkpoint_path = directory + "/run_1/iteration_22.json"
-        with open(checkpoint_path, "r") as f:
-            population = json.load(f)
-
-        # === 2. Set the generation number (based on the file) ===
-        # Extract generation number from filename (e.g., iteration_3.json → 4)
-        it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
-        # === 3. Get the last robot number from the loaded population ===
-        last_ind = population[-1]  # last individual in the list
-        robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
-
-        #Extract the number from the name string
-        robot_numbers = [
-            int(ind['name'].split("_")[-1].split(".")[0])
-            for ind in population
-        ]
-
-        # Get the biggest robot number and increment
-        robot_number = max(robot_numbers) + 1
-
+    # directory = '/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/examples/dumps/Test'
+    # if not os.listdir(directory):
+    #     print("Directory is empty")
+    # else:
+    #     print("Directory is not empty")
+    #     # === 1. Load saved population from previous generation ===
+    #     checkpoint_path = directory + "/run_1/iteration_40.json"
+    #     with open(checkpoint_path, "r") as f:
+    #         population = json.load(f)
+    #
+    #     # === 2. Set the generation number (based on the file) ===
+    #     # Extract generation number from filename (e.g., iteration_3.json → 4)
+    #     it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
+    #     # === 3. Get the last robot number from the loaded population ===
+    #     last_ind = population[-1]  # last individual in the list
+    #     robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
+    #
+    #     #Extract the number from the name string
+    #     robot_numbers = [
+    #         int(ind['name'].split("_")[-1].split(".")[0])
+    #         for ind in population
+    #     ]
+    #
+    #     # Get the biggest robot number and increment
+    #     robot_number = max(robot_numbers) + 1
 
     while it <= params['GENERATIONS']:
         mutation_rate = it / params['GENERATIONS']
@@ -168,9 +169,12 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
         while len(new_population) < params['POPSIZE']:
             name = f"GEN_{it}_number_{robot_number}"
             if random.random() < crossover_rate:
-                p1 = tournament(population, params['TSIZE'])
-                p2 = tournament(population, params['TSIZE'])
+                #p1 = tournament(population, params['TSIZE'])
+                # p2 = tournament(population, params['TSIZE'])
+                p1 = population[0]
+                p2 = population[1]
                 ni = crossover(p1, p2, name)
+                #ni = crossover(p1, p2, name)
                 robot_number += 1
             else:
                 ni = tournament(population, params['TSIZE'])

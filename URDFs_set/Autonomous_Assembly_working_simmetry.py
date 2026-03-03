@@ -45,9 +45,9 @@ class JointCounter:
 
 
 BASE_DIR = Path(__file__).parent
-def treeFunction(file):
+def treeFunction(file, input_file_sphereAUX_option):
 
-    piece_choice = random.choice(file)
+    piece_choice = file[input_file_sphereAUX_option]
     urdf_path = (BASE_DIR / piece_choice).resolve()
     tree = ET.parse(urdf_path)
     root = tree.getroot()
@@ -413,7 +413,7 @@ def assemblement(robot_tree, robot_number):
         "sphere_auxiliar_Link_FRONT.urdf", "sphere_auxiliar_Link_LEFT.urdf",
         "sphere_auxiliar_Link_RIGHT.urdf", "sphere_auxiliar_Link_TOP.urdf"
     ]
-
+    input_file_sphereAUX_option = 0
     faceSet_Covered = {}
     z_axis = []
     x_axis = []
@@ -448,7 +448,7 @@ def assemblement(robot_tree, robot_number):
                 continue
             skip_cube = None
             pass_cube = False
-        if robot_number == "GEN_1_number_5" and node.node_name == "201 B_joint_fixed":
+        if robot_number == "GEN_0_number_5" and node.node_name == "201 B_joint_fixed":
             print("A")
         # if we’re in “skip mode” and still below the skip depth, keep skipping
         if skip_until_depth is not None and node.depth > skip_until_depth:
@@ -459,7 +459,7 @@ def assemblement(robot_tree, robot_number):
             turn_sim_off_node = 0
             save_file(symmetry_part, "simetry.urdf")
             simetry_activated = False
-            root, _ = treeFunction(["simetry.urdf"])
+            root, _ = treeFunction(["simetry.urdf"],0)
             for child in root:
                 robot.append(child)
             symmetry_part = ET.Element("robot", name="sim")
@@ -477,7 +477,7 @@ def assemblement(robot_tree, robot_number):
 
         if sim_check:
             save_file(symmetry_part, "simetry.urdf")
-            root, _ = treeFunction(["simetry.urdf"])
+            root, _ = treeFunction(["simetry.urdf"],0)
             for child in root:
                 robot.append(child)
             symmetry_part = ET.Element("robot", name="sim")
@@ -499,7 +499,7 @@ def assemblement(robot_tree, robot_number):
 
         ## HERE IS THE BODY CONSTRUCTION
         if node.node_name.__contains__("body_Link_CUBE"):
-            root, _ = treeFunction(input_file_body)  # in this case, the direction doesn t matter
+            root, _ = treeFunction(input_file_body,0)  # in this case, the direction doesn t matter
             print(node.node_name)
             robot = body(robot, node.node_name, root)
             faceSet_Covered[node.node_name] = []
@@ -513,7 +513,7 @@ def assemblement(robot_tree, robot_number):
                     turn_sim_off_node = node.depth
                 if (simetry_activated and not node.node_name == "0 body_Link_CUBE" and
                     (z_axis.__contains__(j.parent.node_name) or x_axis.__contains__(j.parent.node_name)) or cube_SIM.__contains__(j.parent.node_name)):
-                    root_sim, _ = treeFunction(input_file_body)
+                    root_sim, _ = treeFunction(input_file_body,0)
                     symmetry_part = body(symmetry_part, f"{node.node_name}_sim", root_sim)
                     save_file(symmetry_part, "symmetry.urdf")
                     cube_SIM.append(node.node_name)
@@ -566,10 +566,12 @@ def assemblement(robot_tree, robot_number):
                 pass_cube = True
                 skip_cube = node.depth
                 continue
-            root, direction = treeFunction(input_file_sphereAUX)
+            root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
+            input_file_sphereAUX_option +=1
             while True:
                 if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                    root, direction = treeFunction(input_file_sphereAUX)
+                    root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
+                    input_file_sphereAUX_option +=1
                 else:
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
                     direction_occupied = direction.split(".urdf")[0]
@@ -583,24 +585,24 @@ def assemblement(robot_tree, robot_number):
                 print(node.node_name)
 
             if faceSet_Covered[cube][-1] == "FRONT" and z_axis.__contains__(cube):
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'],0)
             elif simetry_activated and faceSet_Covered[cube][-1] == "LEFT" :
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_LEFT.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_LEFT.urdf'],0)
             elif simetry_activated and faceSet_Covered[cube][-1] == "RIGHT" :
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_RIGHT.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_RIGHT.urdf'],0)
             elif simetry_activated and faceSet_Covered[cube][-1] == "BOTTOM":
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BOTTOM.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BOTTOM.urdf'],0)
             elif simetry_activated and faceSet_Covered[cube][-1] == "TOP":
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'],0)
             elif faceSet_Covered[cube][-1] == "FRONT":
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'],0)
             elif faceSet_Covered[cube][-1] == "BACK":
-                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
+                root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'],0)
 
             robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
             # joint for the body
             joints = node.node_name.split(" ")
-            root, direction = treeFunction([joints[-1] + "_" + direction])
+            root, direction = treeFunction([joints[-1] + "_" + direction],0)
             for child in node.children:
                 robot = JointRepresentation_conctBody(robot, sphere, node.node_name, child.node_name, joint, root)
 
@@ -628,7 +630,7 @@ def assemblement(robot_tree, robot_number):
 
                 # joint for the body
                 joints = node.node_name.split(" ")
-                root_sim, _ = treeFunction([joints[-1] + "_" + direction_sim])
+                root_sim, _ = treeFunction([joints[-1] + "_" + direction_sim],0)
                 for child in node.children:
                     symmetry_part = JointRepresentation_conctBody(symmetry_part, sphere, f"{node.node_name}_sim", f"{child.node_name}_sim", joint, root_sim)
 
@@ -641,10 +643,12 @@ def assemblement(robot_tree, robot_number):
                     skip_cube = node.depth
                     continue
             if node.parent.node_name.__contains__("body_Link_CUBE"):
-                root, direction = treeFunction(input_file_sphereAUX)
+                root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
+                input_file_sphereAUX_option +=1
                 while True:
                     if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                        root, direction = treeFunction(input_file_sphereAUX)
+                        root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
+                        input_file_sphereAUX_option +=1
                     else:
                         faceSet_Covered[cube].append(direction.split(".urdf")[0])
                         direction_occupied = direction.split(".urdf")[0]
@@ -656,24 +660,24 @@ def assemblement(robot_tree, robot_number):
                     simetry_activated = True
                     turn_sim_off_node = node.depth
                     print(node.node_name)
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "BACK":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_FRONT.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_FRONT.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "LEFT":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_LEFT.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_LEFT.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "RIGHT":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_RIGHT.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_RIGHT.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "BOTTOM":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BOTTOM.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BOTTOM.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "TOP":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_TOP.urdf'],0)
                 elif simetry_activated and faceSet_Covered[cube][-1] == "FRONT":
-                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'])
+                    root_sim, direction_sim = treeFunction(['sphere_auxiliar_Link_BACK.urdf'],0)
 
 
                 robot = AuxiliarSphere(robot, node.parent.node_name, joint, sphere, root)
                 joints = node.node_name.split(" ")
-                root, direction = treeFunction([joints[-1] + ".urdf"])
+                root, direction = treeFunction([joints[-1] + ".urdf"],0)
                 robot = JointRepresentation_conctLimb(robot, sphere.sphere_name, node.node_name, blackSphere,blackSphere.blackSphere_name,
                                                       faceSet_Covered.get(cube, [])[-1], joint, root, False)
                 sphere.sphere_N += 1
@@ -683,7 +687,7 @@ def assemblement(robot_tree, robot_number):
                     if (z_axis.__contains__(node.parent.node_name) or x_axis.__contains__(node.parent.node_name) ):
                         symmetry_part = AuxiliarSphere(symmetry_part, node.parent.node_name, joint, sphere, root_sim)
                         joints = node.node_name.split(" ")
-                        root_sim, direction = treeFunction([joints[-1] + ".urdf"])
+                        root_sim, direction = treeFunction([joints[-1] + ".urdf"],0)
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, sphere.sphere_name,
                                                                       f"{node.node_name}_sim", blackSphere,
                                                                       f"{blackSphere.blackSphere_name}_sim",
@@ -693,14 +697,14 @@ def assemblement(robot_tree, robot_number):
                     else:
                         symmetry_part = AuxiliarSphere(symmetry_part, f"{node.parent.node_name}_sim", joint, sphere, root_sim)
                         joints = node.node_name.split(" ")
-                        root_sim, direction = treeFunction([joints[-1] + ".urdf"])
+                        root_sim, direction = treeFunction([joints[-1] + ".urdf"],0)
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, sphere.sphere_name, f"{node.node_name}_sim", blackSphere, f"{blackSphere.blackSphere_name}_sim",
                                                               faceSet_Covered.get(cube, [])[-1], joint, root_sim, True)
                         sphere.sphere_N += 1
 
             else:
                 joints = node.node_name.split(" ")
-                root, direction = treeFunction([joints[-1] + ".urdf"])
+                root, direction = treeFunction([joints[-1] + ".urdf"],0)
 
                 if node.parent.node_name.__contains__("wheel"):
                     robot = JointRepresentation_conctLimb(robot, node.parent.node_name, node.node_name, blackSphere,blackSphere.blackSphere_name, "",
@@ -711,7 +715,7 @@ def assemblement(robot_tree, robot_number):
 
 
                 if simetry_activated:
-                    root_sim, direction = treeFunction([joints[-1] + ".urdf"])
+                    root_sim, direction = treeFunction([joints[-1] + ".urdf"],0)
                     if node.parent.node_name.__contains__("wheel"):
                         symmetry_part = JointRepresentation_conctLimb(symmetry_part, f"{node.parent.node_name}_sim", f"{node.node_name}_sim", blackSphere,f"{blackSphere.blackSphere_name}_sim",
                                                               "", joint, root_sim, True)
@@ -723,7 +727,7 @@ def assemblement(robot_tree, robot_number):
         ## HERE IS THE LIMB CONSTRUCTION
         elif node.node_name.__contains__("limb_"):
             limb = node.node_name.split(" ")
-            root, direction = treeFunction([limb[-1] + ".urdf"])
+            root, direction = treeFunction([limb[-1] + ".urdf"],0)
 
             if simetry_activated:
 
@@ -731,7 +735,7 @@ def assemblement(robot_tree, robot_number):
                               root)
                 blackSphere.blackSphere_N -= 1
                 limb = node.node_name.split(" ")
-                root_sim, direction = treeFunction([limb[-1] + ".urdf"])
+                root_sim, direction = treeFunction([limb[-1] + ".urdf"],0)
                 symmetry_part = limbs(symmetry_part, blackSphere, f"{blackSphere.blackSphere_name}_sim", f"{node.node_name}_sim", extra_sphere,
                                       f"{extra_sphere.extraSphere_name}_sim", joint, root_sim)
                 save_file(symmetry_part, "symmetry.urdf")
@@ -744,23 +748,25 @@ def assemblement(robot_tree, robot_number):
 
         elif node.node_name.__contains__("wheel"):
             limb = node.node_name.split(" ")
-            root, direction = treeFunction([limb[-1] + ".urdf"])
+            root, direction = treeFunction([limb[-1] + ".urdf"],0)
             robot = limbs(robot, blackSphere,blackSphere.blackSphere_name, node.node_name, extra_sphere, extra_sphere.extraSphere_name, joint, root)
 
             if simetry_activated:
                 blackSphere.blackSphere_N -= 1
                 limb = node.node_name.split(" ")
-                root_sim, direction = treeFunction([limb[-1] + ".urdf"])
+                root_sim, direction = treeFunction([limb[-1] + ".urdf"],0)
                 symmetry_part = limbs(symmetry_part, blackSphere,f"{blackSphere.blackSphere_name}_sim", f"{node.node_name}_sim", extra_sphere, f"{extra_sphere.extraSphere_name}_sim", joint, root_sim)
                 blackSphere.blackSphere_N += 1
 
 
         elif node.node_name.__contains__("ε") and node.parent.node_name == "0 body_Link_CUBE":
             cube = node.parent.node_name
-            root, direction = treeFunction(input_file_sphereAUX)
+            root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option)
+            input_file_sphereAUX_option +=1
             while True:
                 if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                    root, direction = treeFunction(input_file_sphereAUX)
+                    root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option)
+                    input_file_sphereAUX_option +=1
                 else:
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
                     direction_occupied = direction.split(".urdf")[0]
@@ -785,7 +791,7 @@ def assemblement(robot_tree, robot_number):
     if simetry_activated and turn_sim_off_node != 0:
         save_file(symmetry_part, "simetry.urdf")
         simetry_activated = False
-        root, _ = treeFunction(["simetry.urdf"])
+        root, _ = treeFunction(["simetry.urdf"],0)
         for child in root:
             robot.append(child)
         robot, collision_found, skip_until_depth = collision_test_and_commit(
