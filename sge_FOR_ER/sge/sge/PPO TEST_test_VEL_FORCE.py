@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-from sge_FOR_ER.sge.sge.Env import URDFRobotEnv
+from sge_FOR_ER.sge.sge.Env_mars import URDFRobotEnv
 import pybullet as p
 
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv

@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 
@@ -27,11 +28,9 @@ class BostonHousing():
         """
         Train and evaluate a robot using the given individual
         """
-
-        # Generate a random “fitness” in [0, 1)
         try:
             PPO_train.train(ROBOT_PATH, name, n_generation, plane)
-            fitness = PPO_TEST.test(ROBOT_PATH, name,plane)
+            fitness = PPO_TEST.test(ROBOT_PATH, name, plane)
             # Package metadata just like before
             info = {
                 'generation_RobotNumber': name,
@@ -62,8 +61,15 @@ if __name__ == "__main__":
     project_root = Path(__file__).resolve().parents[1]  # up from examples/Test_Robots.py
     param_file = project_root / "parameters" / "standard.yml"
 
-    # path_str = "../parameters/standard.yml"
-    # p = Path(path_str)
+    ################## TO USE WHEN RUNNING FROM TERMINAL ##########################
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--mars", type=int, choices=[0, 1], default=0,
+    #                     help="Use Mars terrain (1) or flat plane (0).")
+    # args = parser.parse_args()
+    # mars = bool(args.mars)
+
+    ################## TO USE WHEN RUNNING IDE ##########################
+    mars = int(os.environ.get("MARS", "0"))
     if param_file.is_file():
         print(f"\n✔ Found file: {param_file.resolve()}")
     else:
@@ -71,5 +77,4 @@ if __name__ == "__main__":
 
     setup(param_file)
     eval_func = BostonHousing(params['RUN'])
-    evolutionary_algorithm(evaluation_function=eval_func,
-                                              parameters_file=param_file)
+    evolutionary_algorithm(evaluation_function=eval_func, parameters_file=param_file, mars=mars)

@@ -1,6 +1,5 @@
 import os
 from stable_baselines3 import PPO
-from sge_FOR_ER.sge.sge.Env import URDFRobotEnv
 import pybullet as p
 import random
 import torch
@@ -10,7 +9,12 @@ from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv, SubprocV
 
 def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render, plane):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, plane, render=render)
+        if plane == 0:
+            from sge_FOR_ER.sge.sge.Env_horizontal import URDFRobotEnv
+            env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        elif plane == 1:
+            from sge_FOR_ER.sge.sge.Env_mars import URDFRobotEnv
+            env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
         return env
     return _init
 
@@ -35,13 +39,13 @@ def train(PATH, name, n_generation, plane):
         # print(f"GPUs available: {torch.cuda.device_count()}")
 
         """
-        ATIVAÇÃO DE CUDA AQUI 
+        CUDA ACTIVACTION 
         """
         print('Using device:', 'cuda' if torch.cuda.is_available() else 'cpu', ', device number:',
               torch.cuda.device_count(), ', GPUs in system:', torch.cuda.device_count())
 
         n_envs = 1
-        env = [URDFRobotEnv_make(PATH, velocity=5, force=0.5, render=False, plane=plane) for _ in range(n_envs)]
+        env = [URDFRobotEnv_make(PATH, velocity=67, force=15, render=False, plane=plane) for _ in range(n_envs)]
         env = DummyVecEnv(env)  # Or use DummyVecEnv if you have debugging needs
         env = VecNormalize(env, training=True, norm_obs=True, norm_reward=True, clip_obs=10.0)
         model = PPO(
@@ -59,7 +63,7 @@ def train(PATH, name, n_generation, plane):
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
-        if (100000 * n_envs + (50000 * n_generation) < 1000000):
+        if 100000 * n_envs + (50000 * n_generation) < 1000000:
             total_timesteps = 100000 * n_envs + (50000 * n_generation)
         else:
             total_timesteps = 1000000

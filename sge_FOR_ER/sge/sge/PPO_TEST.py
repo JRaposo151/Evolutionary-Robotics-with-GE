@@ -2,14 +2,19 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-from sge_FOR_ER.sge.sge.Env import URDFRobotEnv
+from sge_FOR_ER.sge.sge.Env_mars import URDFRobotEnv
 import pybullet as p
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
 
 
-def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render,plane):
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render, plane):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render, plane=plane)
+        if plane == 0:
+            from sge_FOR_ER.sge.sge.Env_horizontal import URDFRobotEnv
+            env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
+        elif plane == 1:
+            from sge_FOR_ER.sge.sge.Env_mars import URDFRobotEnv
+            env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
         return env
     return _init
 
@@ -27,7 +32,7 @@ def test(PATH, name, plane):
     # Open the file for writing evaluation results
     with open(os.path.join(results_dir, "evaluation_results.txt"), 'w') as f:
         f.write("Evaluation Results:\n\n")
-        env = DummyVecEnv([URDFRobotEnv_make(PATH, velocity=5, force=0.5,  render=False, plane=plane)])
+        env = DummyVecEnv([URDFRobotEnv_make(PATH, velocity=67, force=15,  render=False, plane=plane)])
         env_vec = VecNormalize.load(vec_path, env)
         #  do not update them at test time
         env_vec.training = False
@@ -49,10 +54,10 @@ def test(PATH, name, plane):
                 obs, reward, terminated, _ = env_vec.step(action)
                 ep_rewards.append(reward)
                 robot_pos = raw_env.getRobotPosition()
-                p.resetDebugVisualizerCamera(cameraDistance=1,
-                                             cameraYaw=50,
-                                             cameraPitch=-30,
-                                             cameraTargetPosition=robot_pos)
+                # p.resetDebugVisualizerCamera(cameraDistance=1,
+                #                              cameraYaw=50,
+                #                              cameraPitch=-30,
+                #                              cameraTargetPosition=robot_pos)
                 done = terminated
 
             episode_total = ep_rewards[-1][0]
@@ -68,7 +73,7 @@ def test(PATH, name, plane):
 
         # -------------------------
         # Write the results to the file
-        f.write(f"Model {name} Velocity: {5} Force: {0.5} ZIP: {model_path}.zip")
+        f.write(f"Model {name} Velocity: {67} Force: {15} ZIP: {model_path}.zip")
         f.write(f" Median Reward = {mean_reward:.2f}")
 
         # Clean up

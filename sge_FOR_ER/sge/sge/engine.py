@@ -7,7 +7,6 @@ from pathlib import Path
 import numpy as np
 import pybullet as p
 import pybullet_data
-from bigtree import preorder_iter
 
 from sge_FOR_ER.sge.sge import grammar as grammar
 from sge_FOR_ER.sge.sge import logger as logger
@@ -22,7 +21,7 @@ from sge_FOR_ER.sge.sge.parameters import (
     set_parameters,
     load_parameters
 )
-from URDFs_set import Autonomous_Assembly_working_simmetry
+from URDFs_set import Autonomous_Assembly_working_simmetry, Autonomous_Assembly_working
 
 
 def generate_random_individual():
@@ -37,7 +36,7 @@ def make_initial_population():
         yield generate_random_individual()
 
 
-def evaluate(ind, eval_func, name, n_generation):
+def evaluate(ind, eval_func, name, n_generation, plane_switch):
     mapping_values = [0 for i in ind['genotype']]
     phen, tree_depth, tree = grammar.mapping(ind['genotype'], mapping_values)
     tree.hshow()
@@ -45,7 +44,10 @@ def evaluate(ind, eval_func, name, n_generation):
     """AQUI CONSTRUIR O ROBO COM AS TREES"""
     try:
         # Attempt to build the robot
-        Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+        if params["GRAMMAR"].__contains__("symmetrical"):
+            Autonomous_Assembly_working_simmetry.assemblement(tree, name)
+        else:
+            Autonomous_Assembly_working.assemblement(tree, name)
 
     except Exception as e:
         print(f"[ASSEMBLY ERROR] Failed to assemble robot_{name}: {e}")
@@ -72,7 +74,6 @@ def evaluate(ind, eval_func, name, n_generation):
     # Absolute path to the URDF
     script_dir = Path(__file__).resolve().parent  # sge/
     ROBOT_PATH = script_dir.parent / "examples" / "robots" / f"robot_{name}.urdf"
-    plane = 1                       # here is to switch between planes: horizontal or mountains
     if not ROBOT_PATH.is_file():
         raise FileNotFoundError(f"URDF not found: {ROBOT_PATH}")
 
@@ -80,7 +81,7 @@ def evaluate(ind, eval_func, name, n_generation):
         ind['fitness'] = 0
         ind['fitness'] = float(ind['fitness'])
     else:
-        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane)
+        quality, other_info = eval_func.evaluate_robot(str(ROBOT_PATH), f"robot_{name}", n_generation, plane_switch)
         ind['fitness'] = quality
         ind['fitness'] = float(ind['fitness'])
         ind['other_info'] = other_info
@@ -102,6 +103,8 @@ def setup(parameters_file_path = None):
     grammar.set_max_tree_depth(params['MAX_TREE_DEPTH'])
     grammar.set_min_init_tree_depth(params['MIN_TREE_DEPTH'])
 
+
+
 def has_movable_joints(robot_path):
     p.connect(p.DIRECT)
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -113,40 +116,83 @@ def has_movable_joints(robot_path):
         if p.getJointInfo(robot, j)[2] in [0]]
     p.disconnect()
     return len(movable_joints) > 0
+import os
+import re
+import json
+from typing import Any, Dict, List, Tuple
 
-def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
+def load_latest_population(directory: str) -> Tuple[List[Dict[str, Any]], int, str]:
+    """
+    Load the population from the latest checkpoint file.
+
+    It looks for files named: iteration_<N>.json inside subfolders like run_1, run_2, ...
+    Picks the file with the biggest N across all runs.
+
+    Returns:
+        population: list of individuals (parsed JSON)
+        it: iteration number (N)
+        checkpoint_path: full path to the chosen file
+    """
+    if not os.path.isdir(directory):
+        raise FileNotFoundError(f"Directory does not exist: {directory}")
+
+    if not os.listdir(directory):
+        raise FileNotFoundError(f"Directory is empty: {directory}")
+
+    iter_pat = re.compile(r"^iteration_(\d+)\.json$")
+
+    best_it = None
+    best_path = None
+
+    # Look in run_* subfolders (and optionally any nested dirs if you want)
+    for entry in os.listdir(directory):
+        run_dir = os.path.join(directory, entry)
+        if not (os.path.isdir(run_dir) and entry.startswith("run_")):
+            continue
+
+        for fname in os.listdir(run_dir):
+            m = iter_pat.match(fname)
+            if not m:
+                continue
+            it = int(m.group(1))
+            fpath = os.path.join(run_dir, fname)
+
+            if best_it is None or it > best_it:
+                best_it = it
+                best_path = fpath
+
+    if best_path is None:
+        raise FileNotFoundError(
+            f"No iteration_*.json found inside any run_* folder in: {directory}"
+        )
+
+    with open(best_path, "r") as f:
+        population = json.load(f)
+
+    return population, best_it, best_path
+
+
+def evolutionary_algorithm(evaluation_function=None, parameters_file=None, mars=0):
     robot_DIR = "../examples/robots"
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
     it = 0
     robot_number = 0
-    import json
-    import os
-    # directory = '/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/examples/dumps/Test'
-    # if not os.listdir(directory):
-    #     print("Directory is empty")
-    # else:
-    #     print("Directory is not empty")
-    #     # === 1. Load saved population from previous generation ===
-    #     checkpoint_path = directory + "/run_1/iteration_40.json"
-    #     with open(checkpoint_path, "r") as f:
-    #         population = json.load(f)
-    #
-    #     # === 2. Set the generation number (based on the file) ===
-    #     # Extract generation number from filename (e.g., iteration_3.json → 4)
-    #     it = int(os.path.splitext(os.path.basename(checkpoint_path))[0].split("_")[1])
-    #     # === 3. Get the last robot number from the loaded population ===
-    #     last_ind = population[-1]  # last individual in the list
-    #     robot_name = last_ind['name']  # e.g., "robot_GEN_0_number_51.urdf"
-    #
-    #     #Extract the number from the name string
-    #     robot_numbers = [
-    #         int(ind['name'].split("_")[-1].split(".")[0])
-    #         for ind in population
-    #     ]
-    #
-    #     # Get the biggest robot number and increment
-    #     robot_number = max(robot_numbers) + 1
+    directory = "/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/examples/dumps/Test"
+
+    try:
+        population, it, checkpoint_path = load_latest_population(directory)
+        print("Loaded:", checkpoint_path)
+        print("Iteration:", it)
+
+        robot_numbers = [
+            int(ind["name"].split("_")[-1].split(".")[0])
+            for ind in population
+        ]
+        robot_number = max(robot_numbers) + 1
+
+    except FileNotFoundError as e:
+        print(e)
 
     while it <= params['GENERATIONS']:
         mutation_rate = it / params['GENERATIONS']
@@ -157,7 +203,7 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
                 """
                 CONSTRUCTION OF THE POPULATION AND EVALUATION
                 """
-                evaluate(i, evaluation_function, name, it)
+                evaluate(i, evaluation_function, name, it, mars)
                 robot_number += 1
 
         population.sort(key=lambda x: x['fitness'], reverse=True)

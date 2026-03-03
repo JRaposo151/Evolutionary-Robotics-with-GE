@@ -2,9 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
-#from Env_plane_1 import URDFRobotEnv
-from Env_plane_2_VELO_CONTROL import URDFRobotEnv
-
+from sge_FOR_ER.sge.sge.Env_horizontal import URDFRobotEnv
 import pybullet as p
 
 from stable_baselines3.common.vec_env import VecNormalize, DummyVecEnv
@@ -19,9 +17,9 @@ forces = [15]
 velocities = [67]
 
 
-def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render,plane):
+def URDFRobotEnv_make(ROBOT_URDF_PATH, velocity, force, render):
     def _init():
-        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render, plane=plane)
+        env = URDFRobotEnv(ROBOT_URDF_PATH, velocity, force, render=render)
         return env
     return _init
 
@@ -40,17 +38,20 @@ with open(os.path.join(results_dir, "evaluation_results_TESTES_velocidade_Força
             print("------------- ------------- ------------- ------------- ")
             print(f"------------- Evaluating Robot number {name} Force {force}  Velocity {velocity} -------------")
             print("------------- ------------- ------------- ------------- ")
+            #vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_020_sem_castigo_distancia_tStep.pkl"
+            #model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_020_sem_castigo_distancia_tStep"
 
-            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_020_POSITION_CONTROL_sem_castigo_distancia_tStep_horizontal.pkl"
+
+            vec_path_2 = f"./models_PPO_Test_NEW_REWARD/best_gen_020_sem_castigo_distancia_tStep_horizontal.pkl"
             ROBOT_URDF_PATH_sim = f"./models_PPO_Test_NEW_REWARD/best_gen_020_simetrico_geracoes.urdf"  # ESTE É O ROBO
-            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_020_POSITION_CONTROL.urdf"
-            model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_020_POSITION_CONTROL_sem_castigo_distancia_tStep_horizontal"
+            ROBOT_URDF_PATH = f"./models_PPO_Test_NEW_REWARD/best_gen_020.urdf"
+            model_name = f"./models_PPO_Test_NEW_REWARD/best_gen_020_sem_castigo_distancia_tStep_horizontal"
 
             # # Ensure the model file exists
             # if not os.path.exists(model_name):
             #     print(f"Model {model_name} not found. Skipping...")
             #     continue
-            env = DummyVecEnv([URDFRobotEnv_make(ROBOT_URDF_PATH, velocity=velocity, force=force, render=True, plane=0)])
+            env = DummyVecEnv([URDFRobotEnv_make(ROBOT_URDF_PATH, velocity=velocity, force=force, render=True)])
             env_vec = VecNormalize.load(vec_path_2, env)
             #  do not update them at test time
             env_vec.training = False

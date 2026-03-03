@@ -140,7 +140,6 @@ class URDFRobotEnv(gym.Env):
         self.last_place = []
 
     def step(self, action):
-        info = {}
         """ Apply action to the robot and compute reward. """
         self.stepCounter += 1
         if self.render_mode:
@@ -183,12 +182,14 @@ class URDFRobotEnv(gym.Env):
         lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
         ang_speed = np.linalg.norm(ang_vel)
         reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
+
+
+
         if self.plane == 0:
             distance_traveled = self.y + robot_position[1]
         elif self.plane == 1:
             distance_traveled = self.y - robot_position[1]
         # Compute step distance and accumulate
-        self.stepCounter += 1
         self.total_distance = distance_traveled
 
 
