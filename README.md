@@ -99,15 +99,21 @@ This repository can be used in a Docker workflow. Typical setup:
 4. Run the same `python -m ...` command
 
 Example structure (adjust to your Dockerfile / image):
+### 1) Build the Docker image
+From the repository root (where the `Dockerfile` is):
+
+```bash
+docker build -t evolutionary-robotics-ge .
+```
 
 ```bash
 docker run -d --gpus "device=2" \
   -v "$(pwd)":/workspace \
   --name "(name of the docker)" \
-  ppo5090:test2 \
+  evolutionary-robotics-ge \
   bash -c "sleep infinity"
-
-
+```
+```bash
 docker exec -it  "(name of the docker)" bash
 ```
 
@@ -156,7 +162,7 @@ Replace the absolute path with the correct absolute path on your machine, or
 
 Prefer a setup using relative paths + proper search paths, if your simulator tooling supports it.
 
-If mars.world is not updated, terrain loading may fail with PyBullet errors like “failed to parse link” / “Cannot load SDF file.”
+WARNING: If mars.world is not updated, terrain loading may fail with PyBullet errors like “failed to parse link” / “Cannot load SDF file.”
 ---
 
 ## Evolution engine (SGE3)
@@ -172,16 +178,59 @@ Since this project uses SGE3 as a dependency/base, its upstream README is the re
 * recommended citations / references
 
 ---
+## Repository structure (code overview)
 
-## Outputs and checkpoints
+This section highlights the main entry points and the most important modules.
 
-Experiments typically write results under a `dumps/` directory (or similar), including:
+### Main entry points
+- `sge_FOR_ER/sge/examples/Test_Robots.py`  
+  Main experiment runner used to launch evolution/evaluation runs (supports command-line args like `--seed`, `--parameters`, and experiment output folders).
 
-* per-run folders (e.g., `run_1/`)
-* iteration checkpoint files (e.g., `iteration_40.json`)
-* generated robots (URDFs) and logs depending on configuration
 
-If you support resume, you can load the latest checkpoint automatically by selecting the highest `iteration_<N>.json` in the run folder(s).
+This section highlights the main modules and directories you will interact with when evolving, training, and testing robots.
+
+### Simulation environments (PyBullet + Stable-Baselines compatible)
+- `sge_FOR_ER/sge/sge/Env_mars.py`  
+  PyBullet environment that loads the Mars world/terrain and evaluates robots in a Mars-like scenario. Implements a Gym/Gymnasium-style API (reset/step/observation/reward) suitable for Stable-Baselines workflows.
+
+- `sge_FOR_ER/sge/sge/Env_horizontal.py`  
+  PyBullet environment for the default flat/horizontal plane scenario. Also implements the Gym/Gymnasium-style API for Stable-Baselines training/testing.
+
+Both environments are responsible for:
+- loading the terrain (Mars mesh or flat plane)
+- spawning robot URDFs
+- applying actions to robot joints
+- stepping the simulation
+- building observations and computing rewards/termination
+
+### Experiment and evaluation scripts
+- `Controller_testing/`  
+  Collection of scripts used for manual and automated testing, including:
+  - testing robots evolved by the grammar/evolution pipeline
+  - testing industrial/reference robots (e.g., Laikago and Husky)
+  - debugging physics, friction, controller behavior, and reward setups
+
+### Grammars and grammar testing
+- `sge_FOR_ER/sge/grammars/`  
+  Main grammar definitions used by the evolutionary algorithm to generate robot morphologies.
+
+- `Grammar/`  
+  Testing and scratch directory used during grammar development (not the main grammar source).
+
+- `robotExpansion_DSGE/`  
+  Utilities and experiments for testing/validating grammar expansion behavior (DSGE/grammar debugging workflows).
+
+### Symmetry testing
+- `SIMETRIA_WORKING/Simetric_Robot.py`  
+  Script used to test and validate symmetry constraints in the grammar-generated robots (to confirm symmetry logic is being applied correctly).
+
+### URDF building blocks and robot construction
+- `URDFs_set/`  
+  Contains the URDF components (links, joints) used to construct evolved robots, plus scripts/utilities that assemble robot URDFs from the grammar output.
+### Parameters and configuration
+- `parameters/standard.yml`  
+  Main configuration file used by the experiment runner (e.g., population size, generations, mutation/crossover settings, evaluation settings).
+
 
 ---
 
