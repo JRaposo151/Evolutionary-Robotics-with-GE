@@ -1,3 +1,4 @@
+import math
 import os
 import time
 
@@ -28,27 +29,36 @@ class URDFRobotEnv(gym.Env):
         """
         super(URDFRobotEnv, self).__init__()
 
+        self.filtered_ang_speed = 0.0
         self.flags = p.URDF_USE_SELF_COLLISION
         self.urdf_path = urdf_path
         self.render_mode = render
-        self.start_position = np.array([65, 75, 10])
+        self.start_position = np.array([65, 75, 9.5])
         self.y = self.start_position[1]
         self.start_orientation = np.array(p.getQuaternionFromEuler([0, 0, 1.5]))
         self.f = f
         self.v = v
-        self.ANG_SAFE = 10.0
-        self.ANG_HIGH = 25.0
-        self.ANG_MAX = 40.0  # beyond this is definitely bad
-        self.total_distance = 0.0
+        # self.ANG_SAFE = 1.2
+        # self.ANG_HIGH = 9.0
+        # self.ANG_MAX = 40.0  # beyond this is definitely bad
+        self.total_distance = np.array([0.0,0.0,0.0])
+
+        # Low-pass filter state
+        self.alpha = 0.95  # EMA coefficient
 
         # Connect to PyBullet
         if self.render_mode:
             p.connect(p.GUI)
+            p.resetDebugVisualizerCamera(cameraDistance=0.5,
+                                         cameraYaw=175,
+                                         cameraPitch=-10,
+                                         cameraTargetPosition=self.start_position)
         else:
             p.connect(p.DIRECT)
 
+
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+        p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
         # Show contact points in PyBullet
         p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
         p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
@@ -56,7 +66,6 @@ class URDFRobotEnv(gym.Env):
 
         p.setGravity(0, 0, -9.8)
         self.terrainId = new_mart_terrain.world_generation()
-        p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 
@@ -160,18 +169,12 @@ class URDFRobotEnv(gym.Env):
 
         p.stepSimulation()
         robot_position, ori = p.getBasePositionAndOrientation(self.roboID)
-        # p.resetDebugVisualizerCamera(
-        #     cameraDistance=2.5,  # Distance from robot
-        #     cameraYaw=50,  # Horizontal angle
-        #     cameraPitch=-35,  # Vertical angle
-        #     cameraTargetPosition=robot_position  # Where the camera looks at
-        # )
+
         observation = self._get_observation(robot_position, ori)
         truncated = False
         # Compute reward
         lin_vel, ang_vel = p.getBaseVelocity(self.roboID)
-        ang_speed = np.linalg.norm(ang_vel)
-        reward, done, truncated = self.compute_reward(robot_position, contacts, ang_speed)
+        reward, done, truncated = self.compute_reward(robot_position, ang_vel, lin_vel, contacts)
 
         distance_traveled = self.y - robot_position[1]
         # Compute step distance and accumulate
@@ -181,6 +184,7 @@ class URDFRobotEnv(gym.Env):
         info = {
             "total_distance": self.total_distance,
             "elapsed_steps": self.stepCounter,
+            "angular_velocity": np.linalg.norm(ang_vel),
         }
         return observation, reward, done, truncated, info
 
@@ -210,33 +214,41 @@ class URDFRobotEnv(gym.Env):
 
         return observation
 
-    def angular_speed_penalty(self, ang_speed):
-        # print(ang_speed)
-        if ang_speed <= self.ANG_SAFE:
-            return 0.0
 
-        elif ang_speed <= self.ANG_HIGH:
-            # quadratic soft penalty
-            excess = ang_speed - self.ANG_HIGH
-            return -0.1 * excess ** 2
+    def angular_speed_penalty(self, ang_speed):
+        #print(np.linalg.norm(ang_speed))
+        self.filtered_ang_speed = (
+                (1 - self.alpha) * self.filtered_ang_speed
+                + self.alpha * ang_speed)
+        return np.linalg.norm(self.filtered_ang_speed)
+
+
+    def compute_reward(self, current_position, ang_speed, lin_vel, contacts):
+        ang_speed_condition = self.angular_speed_penalty(np.array(ang_speed))
+        reward_good_behaviour = self.start_position[1] - current_position[1]
+        if ang_speed_condition < 0:
+            reward = reward_good_behaviour + (-lin_vel[1]/750) + ang_speed_condition/1000 + (current_position[2] - self.z_floor) * 2
 
         else:
-            # hard penalty for uncontrolled spin
-            return -5.0 - 0.5 * (ang_speed - self.ANG_MAX)
+            reward = reward_good_behaviour + (-lin_vel[1]/750) - ang_speed_condition/1000 + (current_position[2] - self.z_floor) * 2
 
-    def compute_reward(self, current_position, contacts, ang_speed):
-        ang_speed_condition = self.angular_speed_penalty(ang_speed)
-        reward = self.start_position[1] - current_position[1]
+        # print(  reward_good_behaviour,
+        #         (-lin_vel[1] / 750),
+        #         (current_position[2] - self.z_floor) * 2,
+        #         ang_speed_condition/1000,
+        #         reward
+        #     )
+
+        self.z_floor = current_position[2]
         self.start_position[1] = current_position[1]
 
-
         if not len(self.last_place) == 0:
-            if (len(contacts) == 0) and (current_position[2] - self.last_place[2] > 0.3 or current_position[2] - self.last_place[2] < -0.3):
+            if (len(contacts) == 0) and (abs(current_position[2] - self.last_place[2]) > 0.3):
                 return -1.0, True, True
 
-        if abs(self.start_position[0] - current_position[0] > 0.5):
+        if abs(self.start_position[0] - current_position[0]) > 2:
             self.total_distance = self.y - current_position[1]
-            return reward, False, True
+            return -1, False, True
 
         # End episode after 20 seconds (4800 steps at 240Hz)
         done = self.stepCounter >= 4800
@@ -244,11 +256,12 @@ class URDFRobotEnv(gym.Env):
 
     def reset(self, seed = None, options = None):
         """ Reset the robot to a new starting position. """
+        self.filtered_ang_speed = 0.0
         self.stepCounter = 0
         self.last_place = []
         p.resetSimulation()
-        p.removeBody(self.terrainId)
-        self.start_position = [65, 75, 10]
+        #p.removeBody(self.terrainId)
+        self.start_position = [65, 75, 9.5]
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setPhysicsEngineParameter(enableFileCaching=1)  # Avoid caching old URDFs
         # Show contact points in PyBullet
@@ -260,7 +273,7 @@ class URDFRobotEnv(gym.Env):
         p.setGravity(0, 0, -9.8)
 
         self.terrainId = new_mart_terrain.world_generation()
-        p.changeDynamics(self.terrainId, -1, lateralFriction=0.5)
+        p.changeDynamics(self.terrainId, -1, lateralFriction=0.8)
 
         self.roboID = p.loadURDF(self.urdf_path, self.start_position, self.start_orientation, useFixedBase=False, flags=self.flags)
 
@@ -292,6 +305,8 @@ class URDFRobotEnv(gym.Env):
         for _ in range(steps):
             p.stepSimulation()
             #time.sleep(1.0 / 240.0)  # Small delay for real-time visualization
+        robot_position, _ = p.getBasePositionAndOrientation(self.roboID)
+        self.z_floor = robot_position[2]
 
     def getRobotPosition(self):
         """ Returns the current robot position. """

@@ -39,7 +39,7 @@ class BostonHousing():
             print(info)
             return fitness, info
 
-        except RuntimeError as e:
+        except Exception as e:
             print(f"[EVAL ERROR] Robot {name} failed: {e}")
             # Save the broken URDF
             failed_dir = "failed_robots"
@@ -60,21 +60,6 @@ if __name__ == "__main__":
     # Auto-resolve relative to project root
     project_root = Path(__file__).resolve().parents[1]  # up from examples/Test_Robots.py
     param_file = project_root / "parameters" / "standard.yml"
-
-    ################## TO USE WHEN RUNNING FROM TERMINAL ##########################
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--mars", type=int, choices=[0, 1], default=0,
-    #                     help="Use Mars terrain (1) or flat plane (0).")
-    # args = parser.parse_args()
-    # mars = bool(args.mars)
-
-    ################## TO USE WHEN RUNNING IDE ##########################
-    mars = int(os.environ.get("MARS", "0"))
-    if param_file.is_file():
-        print(f"\n✔ Found file: {param_file.resolve()}")
-    else:
-        print(f"\n✘ File not found: {param_file.resolve()}")
-
     setup(param_file)
     eval_func = BostonHousing(params['RUN'])
-    evolutionary_algorithm(evaluation_function=eval_func, parameters_file=param_file, mars=mars)
+    evolutionary_algorithm(evaluation_function=eval_func, parameters_file=param_file)

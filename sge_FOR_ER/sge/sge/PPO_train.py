@@ -58,13 +58,13 @@ def train(PATH, name, n_generation, plane):
                     gamma=0.99,
                     gae_lambda=0.95,
                     verbose=1,
-                    tensorboard_log="./logs_1/",
+                    #tensorboard_log="./logs_1/",
                     seed=42,
                     device="cuda" if torch.cuda.is_available() else "cpu",
 
         )
-        if 100000 * n_envs + (50000 * n_generation) < 1000000:
-            total_timesteps = 100000 * n_envs + (50000 * n_generation)
+        if 100000 * n_envs + (10000 * n_generation) < 1000000:
+            total_timesteps = 100000 * n_envs + (10000 * n_generation)
         else:
             total_timesteps = 1000000
         model.learn(total_timesteps=total_timesteps)

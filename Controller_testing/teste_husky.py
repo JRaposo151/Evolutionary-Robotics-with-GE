@@ -11,11 +11,12 @@ import os
 import time
 import pybullet as p
 import pybullet_data
+from matplotlib import pyplot as plt
+
 from sge_FOR_ER.sge.sge import new_mart_terrain
 import numpy as np
 
 # ---- Config ----
-DT = 1.0 / 240.0
 STEPS = 8000
 
 # Torque magnitude per wheel (tune up/down)
@@ -30,20 +31,24 @@ def main():
 
 
     flags = p.URDF_USE_SELF_COLLISION
-    p.connect(p.GUI)
-    p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
-    # Show contact points in PyBullet
-    p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
-    p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
-    p.setGravity(0, 0, -9.81)
-    p.setTimeStep(DT)
-    # Ground
-    plane = new_mart_terrain.world_generation()
-    p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    p.changeDynamics(plane, -1, lateralFriction=0.5)
+
 
     if not own_robots:
+
+        p.connect(p.DIRECT)
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+        # Show contact points in PyBullet
+        p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
+        p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+        p.setGravity(0, 0, -9.81)
+        # Ground
+        plane = new_mart_terrain.world_generation()
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.changeDynamics(plane, -1, lateralFriction=0.5)
+        p.setPhysicsEngineParameter(numSubSteps=3)
+
+
         path = "husky/husky.urdf"
         ori = [0, 0, 0.7071, 0.7071]
         pos = [65, 75, 10]
@@ -119,107 +124,147 @@ def main():
 
                 print(f"Roda {wheel_id} | Velocidade: {actual_velocity:.2f} rad/s | Torque: {applied_torque:.2f} Nm")
 
-
-            time.sleep(DT)
-
         p.disconnect()
 
     else:
-        ori = np.array(p.getQuaternionFromEuler([0, 0, 1.5]))
-        path = "/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/Controller_testing/models_PPO_Test_NEW_REWARD/best_gen_020.urdf"
-        husky_id = p.loadURDF(path, np.array([65, 75, 8.5]), ori, useFixedBase=False, flags=flags)
 
-        for joint in range(p.getNumJoints(husky_id)):
-            joint_info = p.getJointInfo(husky_id, joint)
-            link_name = p.getJointInfo(husky_id,joint)
-            print(joint, joint_info[12].decode("utf-8"))
-            #if "wheel_link" in joint_info[12].decode("utf-8"):
-                #p.changeDynamics(husky_id, joint, lateralFriction=1)
+        episodes = 30
+        episode_distances = []
+        max_episode_distances = []
 
-            # Identify revolute joints with limits
-            if p.getJointInfo(husky_id, joint)[2] in [0]:
-                movable_joints.append(joint)
+        for epi in range(episodes):
+            max_distance = 0.0
+            p.connect(p.DIRECT)
+            p.setAdditionalSearchPath(pybullet_data.getDataPath())
+            p.setPhysicsEngineParameter(enableFileCaching=0)  # Avoid caching old URDFs
+            # Show contact points in PyBullet
+            p.setPhysicsEngineParameter(enableConeFriction=1)  # Improve friction
+            p.setPhysicsEngineParameter(enableSAT=1)  # Use SAT solver for better collisions
+            p.setGravity(0, 0, -9.81)
+            # Ground
+            plane = new_mart_terrain.world_generation()
+            p.setAdditionalSearchPath(pybullet_data.getDataPath())
+            p.changeDynamics(plane, -1, lateralFriction=0.5)
+            p.setPhysicsEngineParameter(numSubSteps=3)
+            ori = np.array(p.getQuaternionFromEuler([0, 0, 1.5]))
+            path = "/Controller_testing/Husky_like_robot&controllers/husky_like_robot.urdf"
+            husky_id = p.loadURDF(path, np.array([65, 75, 8.5]), ori, useFixedBase=False, flags=flags)
 
-        num_movable_joints = len(movable_joints)
-        print(f"Number of Movable Joints: {num_movable_joints}")
+            for joint in range(p.getNumJoints(husky_id)):
+                joint_info = p.getJointInfo(husky_id, joint)
+                print(joint, joint_info[12].decode("utf-8"))
+                p.changeDynamics(husky_id, joint, lateralFriction=1)
 
-        for i in range(p.getNumJoints(husky_id)):
-            joint_info = p.getJointInfo(husky_id, i)
-            link_name = joint_info[12].decode("utf-8")
+                # Identify revolute joints with limits
+                if p.getJointInfo(husky_id, joint)[2] in [0]:
+                    movable_joints.append(joint)
 
-            # Disable ALL collisions for links that are just visual joints
-            if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
-                link_index = joint_info[0]
-                p.setCollisionFilterGroupMask(husky_id, link_index, collisionFilterGroup=0, collisionFilterMask=0)
-# Disable default motors so TORQUE_CONTROL works as expected
+            num_movable_joints = len(movable_joints)
+            print(f"Number of Movable Joints: {num_movable_joints}")
 
-        # Camera
-        p.resetDebugVisualizerCamera(
-            cameraDistance=2.0,
-            cameraYaw=60,
-            cameraPitch=-25,
-            cameraTargetPosition=[0, 0, 0.2],
-        )
-        for _ in range(150):
-            p.stepSimulation()
-        # Run simulation
-        for step in range(STEPS):
+            for i in range(p.getNumJoints(husky_id)):
+                joint_info = p.getJointInfo(husky_id, i)
+                link_name = joint_info[12].decode("utf-8")
 
-            base_pos, base_ori = p.getBasePositionAndOrientation(husky_id)
-            lin_vel, ang_vel = p.getBaseVelocity(husky_id)
-            ang_speed = np.linalg.norm(ang_vel)
-            base_ori = p.getEulerFromQuaternion(base_ori)
-            print(ang_speed)
-            # Keep camera following the robot
+                # Disable ALL collisions for links that are just visual joints
+                if "L_joint_" in link_name or "Sphere_" in link_name or "B_joint" in link_name:
+                    link_index = joint_info[0]
+                    p.setCollisionFilterGroupMask(husky_id, link_index, collisionFilterGroup=0, collisionFilterMask=0)
+            # Disable default motors so TORQUE_CONTROL works as expected
+
+            # Camera
             p.resetDebugVisualizerCamera(
                 cameraDistance=2.0,
                 cameraYaw=60,
                 cameraPitch=-25,
-                cameraTargetPosition=base_pos,
+                cameraTargetPosition=[0, 0, 0.2],
             )
+            for _ in range(150):
+                p.stepSimulation()
+            # Run simulation
+            for step in range(STEPS):
 
-            for i, j in enumerate(movable_joints):
-                #p.setJointMotorControl2(husky_id, j, controlMode=p.VELOCITY_CONTROL, force=0)
+                base_pos, base_ori = p.getBasePositionAndOrientation(husky_id)
+                lin_vel, ang_vel = p.getBaseVelocity(husky_id)
+                ang_speed = np.linalg.norm(ang_vel)
+                print(ang_speed)
+                # Keep camera following the robot
+                p.resetDebugVisualizerCamera(
+                    cameraDistance=2.0,
+                    cameraYaw=60,
+                    cameraPitch=-25,
+                    cameraTargetPosition=base_pos,
+                )
 
-                if i % 2 == 0:
-                    # p.setJointMotorControl2(
-                    #     bodyUniqueId=husky_id,
-                    #     jointIndex=j,
-                    #     controlMode=p.TORQUE_CONTROL,
-                    #     force=float(-TORQUE_OWN_ROBOT),
-                    # )
+                for i, j in enumerate(movable_joints):
+                    #p.setJointMotorControl2(husky_id, j, controlMode=p.VELOCITY_CONTROL, force=0)
 
-                    p.setJointMotorControl2(husky_id, j, p.VELOCITY_CONTROL,
-                                            targetVelocity=-67, force=TORQUE_OWN_ROBOT)
-                else:
-                #     p.setJointMotorControl2(
-                #         bodyUniqueId=husky_id,
-                #         jointIndex=j,
-                #         controlMode=p.TORQUE_CONTROL,
-                #         force=float(TORQUE_OWN_ROBOT),
-                #     )
+                    if i % 2 == 0:
+                        # p.setJointMotorControl2(
+                        #     bodyUniqueId=husky_id,
+                        #     jointIndex=j,
+                        #     controlMode=p.TORQUE_CONTROL,
+                        #     force=float(-TORQUE_OWN_ROBOT),
+                        # )
 
-                    p.setJointMotorControl2(husky_id, j, p.VELOCITY_CONTROL,
-                                            targetVelocity=67, force=TORQUE_OWN_ROBOT)
+                        p.setJointMotorControl2(husky_id, j, p.VELOCITY_CONTROL,
+                                                targetVelocity=-67, force=TORQUE_OWN_ROBOT)
+                    else:
+                    #     p.setJointMotorControl2(
+                    #         bodyUniqueId=husky_id,
+                    #         jointIndex=j,
+                    #         controlMode=p.TORQUE_CONTROL,
+                    #         force=float(TORQUE_OWN_ROBOT),
+                    #     )
 
-            p.stepSimulation()
+                        p.setJointMotorControl2(husky_id, j, p.VELOCITY_CONTROL,
+                                                targetVelocity=67, force=TORQUE_OWN_ROBOT)
 
-            lin_vel, _ = p.getBaseVelocity(husky_id)
-            vx, vy, vz = lin_vel
-            speed = (vx * vx + vy * vy + vz * vz) ** 0.5
-            print(f"vx={vx:.3f} vy={vy:.3f} speed={speed:.3f} ")
+                p.stepSimulation()
 
-            for wheel_id in movable_joints:
-                state = p.getJointState(husky_id, wheel_id)
+                lin_vel, _ = p.getBaseVelocity(husky_id)
+                vx, vy, vz = lin_vel
+                speed = (vx * vx + vy * vy + vz * vz) ** 0.5
+                print(f"vx={vx:.3f} vy={vy:.3f} speed={speed:.3f} ")
 
-                actual_velocity = state[1]
-                applied_torque = state[3]
+                for wheel_id in movable_joints:
+                    state = p.getJointState(husky_id, wheel_id)
 
-                print(f"Roda {wheel_id} | Velocidade: {actual_velocity:.2f} rad/s | Torque: {applied_torque:.2f} Nm")
+                    actual_velocity = state[1]
+                    applied_torque = state[3]
 
-            time.sleep(DT)
+                    print(f"Roda {wheel_id} | Velocidade: {actual_velocity:.2f} rad/s | Torque: {applied_torque:.2f} Nm")
 
-        p.disconnect()
+                base_pos_1, _ = p.getBasePositionAndOrientation(husky_id)
+                dist = 75 - base_pos_1[1]
+                last_distance = dist
+                if dist > max_distance:
+                    max_distance = dist
+            p.disconnect()
+            episode_distances.append(last_distance)
+            max_episode_distances.append(max_distance)
+
+        x = np.arange(len(episode_distances))
+        avg_max_distance = float(np.mean(max_episode_distances)) if max_episode_distances else 0.0
+        avg_distance = float(np.mean(episode_distances)) if episode_distances else 0.0
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(x, episode_distances, marker='o', label="Last distance")
+        plt.plot(x, max_episode_distances, color='red', marker='*',
+                 linestyle='-', linewidth=1.2, markersize=10, label="Max distance (within episode)")
+
+        best_so_far = np.maximum.accumulate(max_episode_distances)
+
+        plt.axhline(avg_distance, color='b', linestyle='--', label=f"Avg Distance ({avg_distance:.2f})")
+        plt.axhline(avg_max_distance, color="r", linestyle='--', label=f"Avg Max Dist ({avg_max_distance:.2f})")
+
+        plt.title("Episode Distances")
+        plt.xlabel("Episode")
+        plt.ylabel("Distance")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == "__main__":

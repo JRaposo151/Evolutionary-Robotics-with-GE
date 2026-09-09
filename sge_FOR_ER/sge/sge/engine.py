@@ -14,7 +14,7 @@ from datetime import datetime
 from tqdm import tqdm
 from sge_FOR_ER.sge.sge.operators.recombination import crossover
 from sge_FOR_ER.sge.sge.operators.mutation import mutate
-from sge_FOR_ER.sge.sge.operators.recombination_new_1 import crossover
+#from sge_FOR_ER.sge.sge.operators.recombination_new_1 import crossover
 from sge_FOR_ER.sge.sge.operators.selection import tournament
 from sge_FOR_ER.sge.sge.parameters import (
     params,
@@ -28,7 +28,7 @@ def generate_random_individual():
     genotype = [[] for key in grammar.get_non_terminals()]
     tree_depth = grammar.recursive_individual_creation(genotype, grammar.start_rule()[0], 0)
 
-    return {'genotype': genotype, 'fitness': None, 'tree_depth' : tree_depth}
+    return {'genotype': genotype, 'fitness': None, 'tree_depth': tree_depth, 'mutation': False, 'crossover': False}
 
 
 def make_initial_population():
@@ -56,9 +56,14 @@ def evaluate(ind, eval_func, name, n_generation, plane_switch):
         failed_dir = "failed_assemblies"
         os.makedirs(failed_dir, exist_ok=True)
         urdf_path = os.path.join("/workspace/URDFs_set", f"robot_{name}.urdf")
+        genotype_path = os.path.join(failed_dir, f"robot_{name}_genotype.txt")
         if os.path.exists(urdf_path):
             shutil.copy(urdf_path, os.path.join(failed_dir, f"robot_{name}.urdf"))
             print(f"[SAVED] Partial or failed URDF saved: {urdf_path}")
+            with open(genotype_path, "w") as f:
+                f.write(str(ind["genotype"]))
+
+            print(f"[SAVED] Genotype saved: {genotype_path}")
         else:
             print(f"[WARN] No URDF found for robot_{name} — skipping save.")
             ind['fitness'] = 0
@@ -172,14 +177,14 @@ def load_latest_population(directory: str) -> Tuple[List[Dict[str, Any]], int, s
     return population, best_it, best_path
 
 
-def evolutionary_algorithm(evaluation_function=None, parameters_file=None, mars=0):
+def evolutionary_algorithm(evaluation_function=None, parameters_file=None):
     robot_DIR = "../examples/robots"
     setup(parameters_file_path=parameters_file)
     population = list(make_initial_population())
     it = 0
     robot_number = 0
     directory = "/home/joaoraposo/Documents/GitHub/Evolutionary-Robotics-with-GE/sge_FOR_ER/sge/examples/dumps/Test"
-
+    mars = params['MARS']
     try:
         population, it, checkpoint_path = load_latest_population(directory)
         print("Loaded:", checkpoint_path)
@@ -195,8 +200,11 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None, mars=
         print(e)
 
     while it <= params['GENERATIONS']:
-        mutation_rate = it / params['GENERATIONS']
-        crossover_rate = params['PROB_CROSSOVER'] - mutation_rate
+        if it == 1:
+            params['MAX_TREE_DEPTH'] = 12
+            grammar.set_max_tree_depth(params['MAX_TREE_DEPTH'])
+        mutation_rate = params['PROB_MUTATION']
+        crossover_rate = params['PROB_CROSSOVER']
         for i in tqdm(population):
             name = f"GEN_{it}_number_{robot_number}"
             if i['fitness'] is None:
@@ -215,12 +223,9 @@ def evolutionary_algorithm(evaluation_function=None, parameters_file=None, mars=
         while len(new_population) < params['POPSIZE']:
             name = f"GEN_{it}_number_{robot_number}"
             if random.random() < crossover_rate:
-                #p1 = tournament(population, params['TSIZE'])
-                # p2 = tournament(population, params['TSIZE'])
-                p1 = population[0]
-                p2 = population[1]
+                p1 = tournament(population, params['TSIZE'])
+                p2 = tournament(population, params['TSIZE'])
                 ni = crossover(p1, p2, name)
-                #ni = crossover(p1, p2, name)
                 robot_number += 1
             else:
                 ni = tournament(population, params['TSIZE'])

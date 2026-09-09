@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <robot name="sim">
-  <joint name="joint_11" type="fixed">
+  <joint name="joint_4" type="fixed">
     <parent link="0 body_Link_CUBE" />
-    <child link="Sphere_4" />
+    <child link="Sphere_2" />
     <origin xyz="0 -0.023 0" rpy="0 0 0" />
   </joint>
-  <link name="Sphere_4">
+  <link name="Sphere_2">
     <visual>
       <geometry>
         <sphere radius="0.01" />
@@ -24,14 +24,14 @@
       <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
     </inertial>
   </link>
-  <joint name="joint_12" type="revolute">
-    <parent link="Sphere_4" />
-    <child link="1 B_joint_revolute_sim" />
+  <joint name="joint_5" type="revolute">
+    <parent link="Sphere_2" />
+    <child link="2 B_joint_revolute_sim" />
     <origin xyz="0 0 0" rpy="0 0 0" />
     <axis xyz="0 0 1" />
     <limit lower="-1" upper="1" effort="1.0" velocity="1.0" />
   </joint>
-  <link name="1 B_joint_revolute_sim">
+  <link name="2 B_joint_revolute_sim">
     <visual>
       <geometry>
         <cylinder length="0.04" radius="0.02" />
@@ -50,12 +50,12 @@
       <inertia ixx="7.5e-06" ixy="0.0" ixz="0.0" iyy="7.5e-06" iyz="0.0" izz="7.5e-06" />
     </inertial>
   </link>
-  <joint name="joint_13" type="fixed">
-    <parent link="1 B_joint_revolute_sim" />
-    <child link="Sphere_5" />
+  <joint name="joint_6" type="fixed">
+    <parent link="2 B_joint_revolute_sim" />
+    <child link="Sphere_3" />
     <origin xyz="0 -0.02 0" rpy="0 0 0" />
   </joint>
-  <link name="Sphere_5">
+  <link name="Sphere_3">
     <visual>
       <geometry>
         <sphere radius="0.01" />
@@ -74,12 +74,12 @@
       <inertia ixx="1.7e-07" ixy="0.0" ixz="0.0" iyy="1.7e-07" iyz="0.0" izz="1.7e-07" />
     </inertial>
   </link>
-  <joint name="joint_14" type="fixed">
-    <parent link="Sphere_5" />
-    <child link="2 body_Link_CUBE_sim" />
+  <joint name="joint_7" type="fixed">
+    <parent link="Sphere_3" />
+    <child link="3 body_Link_CUBE_sim" />
     <origin xyz="0 -0.025 0" rpy="0 0 0" />
   </joint>
-  <link name="2 body_Link_CUBE_sim">
+  <link name="3 body_Link_CUBE_sim">
     <visual>
       <geometry>
         <box size="0.046 0.046 0.046" />

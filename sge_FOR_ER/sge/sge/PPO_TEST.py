@@ -30,7 +30,7 @@ def test(PATH, name, plane):
     vec_path = f"robots_vec/{name}.pkl"
 
     # Open the file for writing evaluation results
-    with open(os.path.join(results_dir, "evaluation_results.txt"), 'w') as f:
+    with open(os.path.join(results_dir, "Husky_like_robot&controllers.txt"), 'w') as f:
         f.write("Evaluation Results:\n\n")
         env = DummyVecEnv([URDFRobotEnv_make(PATH, velocity=67, force=15,  render=False, plane=plane)])
         env_vec = VecNormalize.load(vec_path, env)
@@ -39,30 +39,39 @@ def test(PATH, name, plane):
         # reward normalization is not needed at test time
         env_vec.norm_reward = False
         model = PPO.load(model_path)
-        n_eval_episodes = 3
+        n_eval_episodes = 5
         episode_rewards = []
         raw_env = env_vec.envs[0]
 
         print("\nStarting evaluation over multiple episodes...\n")
         for ep in range(n_eval_episodes):
             ep_rewards = []
+            max_distance = 0.0
+            last_distance = 0.0
             obs = env_vec.reset()
             raw_env.let_robot_fall()
             done = False
             while not done:
                 action, _ = model.predict(obs, deterministic=False)
-                obs, reward, terminated, _ = env_vec.step(action)
+                obs, reward, terminated, infos = env_vec.step(action)
                 ep_rewards.append(reward)
                 robot_pos = raw_env.getRobotPosition()
-                # p.resetDebugVisualizerCamera(cameraDistance=1,
-                #                              cameraYaw=50,
-                #                              cameraPitch=-30,
-                #                              cameraTargetPosition=robot_pos)
+                p.resetDebugVisualizerCamera(cameraDistance=1,
+                                             cameraYaw=50,
+                                             cameraPitch=-30,
+                                             cameraTargetPosition=robot_pos)
+
+                info = infos[0] if isinstance(infos, (list, tuple)) and len(infos) > 0 else (
+                    infos if isinstance(infos, dict) else {})
+                dist = float(info.get("total_distance", last_distance))
+                last_distance = dist
+                if dist > max_distance:
+                    max_distance = dist
                 done = terminated
 
             episode_total = ep_rewards[-1][0]
-            episode_rewards.append(episode_total)
-            print(f"Episode {ep + 1} Final Reward: {episode_total:.2f}")
+            episode_rewards.append(max_distance)
+            print(f"Episode {ep + 1} Final Reward: {dist:.2f}")
 
         mean_reward = np.mean(episode_rewards)
         std_reward = np.std(episode_rewards)

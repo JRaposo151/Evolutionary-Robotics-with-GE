@@ -329,6 +329,8 @@ def collision_test_and_commit(
     print(f"Saved temporary URDF to {output_path}")
 
     # --- 2. Load into PyBullet ---
+    if p.isConnected():
+        p.disconnect()
     if not p.isConnected():
         p.connect(p.DIRECT)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -352,13 +354,11 @@ def collision_test_and_commit(
 
     # disable visual‐only joints
     for i in range(num_joints):
-        name = p.getJointInfo(robotID, i)[12].decode('utf-8')
-        if any(tag in name for tag in ("L_joint_", "Sphere_", "B_joint")):
-            p.setCollisionFilterGroupMask(
-                robotID, i,
-                collisionFilterGroup=0,
-                collisionFilterMask=0
-            )
+        joint_info = p.getJointInfo(robotID, i)
+        name = joint_info[12].decode("utf-8")
+        if "L_joint_" in name or "Sphere_" in name or "B_joint" in name:
+            link_index = joint_info[0]
+            p.setCollisionFilterGroupMask(robotID, link_index, collisionFilterGroup=0, collisionFilterMask=0)
 
     # --- 3. Simple collision test ---
     collision_found = False
@@ -366,25 +366,28 @@ def collision_test_and_commit(
     contacts = p.getContactPoints(bodyA=robotID, bodyB=robotID)
     skip_until_depth = None
 
-    if contacts:
-        collision_found = True
-        skip_until_depth = node_depth
-        print(f"⚠️ Self-collision detected:")
-        for c in contacts:
-            a, b = c[3], c[4]
-            nameA = link_names.get(a, f"<unknown:{a}>")
-            nameB = link_names.get(b, f"<unknown:{b}>")
-            print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
+    if contacts :
+        for danger_contacts in contacts:
+            if danger_contacts[8]<-0.002 :
+                collision_found = True
+                skip_until_depth = node_depth
+                print(f"⚠️ Self-collision detected:")
+                for c in contacts:
+                    a, b = c[3], c[4]
+                    nameA = link_names.get(a, f"<unknown:{a}>")
+                    nameB = link_names.get(b, f"<unknown:{b}>")
+                    print(f"- Link {a} (“{nameA}”) ↔ Link {b} (“{nameB}”)")
 
-        # revert to last committed if it exists
-        if os.path.exists(committed_path):
-            committed_tree = ET.parse(committed_path)
-            robot = committed_tree.getroot()
-            print(f"🔄 Reverted to committed URDF at {committed_path}")
-        else:
-            print(f"❌ No committed URDF at {committed_path} to revert to.")
+                # revert to last committed if it exists
+                if os.path.exists(committed_path):
+                    committed_tree = ET.parse(committed_path)
+                    robot = committed_tree.getroot()
+                    print(f"🔄 Reverted to committed URDF at {committed_path}")
+                else:
+                    print(f"❌ No committed URDF at {committed_path} to revert to.")
 
-    else:
+
+    if not collision_found:
         print("✅ No self-collisions detected in the test interval.")
         shutil.copyfile(output_path, committed_path)
         print(f"Promoted working URDF → {committed_path}")
@@ -413,7 +416,7 @@ def assemblement(robot_tree, robot_number):
         "sphere_auxiliar_Link_FRONT.urdf", "sphere_auxiliar_Link_LEFT.urdf",
         "sphere_auxiliar_Link_RIGHT.urdf", "sphere_auxiliar_Link_TOP.urdf"
     ]
-    input_file_sphereAUX_option = 0
+    input_file_sphereAUX_option = []
     faceSet_Covered = {}
     z_axis = []
     x_axis = []
@@ -448,7 +451,7 @@ def assemblement(robot_tree, robot_number):
                 continue
             skip_cube = None
             pass_cube = False
-        if robot_number == "GEN_0_number_5" and node.node_name == "201 B_joint_fixed":
+        if robot_number == "GEN_0_number_9": # and node.node_name == "40 body_Link_CUBE":
             print("A")
         # if we’re in “skip mode” and still below the skip depth, keep skipping
         if skip_until_depth is not None and node.depth > skip_until_depth:
@@ -499,6 +502,7 @@ def assemblement(robot_tree, robot_number):
 
         ## HERE IS THE BODY CONSTRUCTION
         if node.node_name.__contains__("body_Link_CUBE"):
+            input_file_sphereAUX_option.append(0)
             root, _ = treeFunction(input_file_body,0)  # in this case, the direction doesn t matter
             print(node.node_name)
             robot = body(robot, node.node_name, root)
@@ -566,12 +570,14 @@ def assemblement(robot_tree, robot_number):
                 pass_cube = True
                 skip_cube = node.depth
                 continue
-            root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
-            input_file_sphereAUX_option +=1
+            keys = list(faceSet_Covered.keys())
+            index = keys.index(cube)
+            root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option[index])
+            input_file_sphereAUX_option[index] +=1
             while True:
                 if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                    root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
-                    input_file_sphereAUX_option +=1
+                    root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option[index])
+                    input_file_sphereAUX_option[index] +=1
                 else:
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
                     direction_occupied = direction.split(".urdf")[0]
@@ -643,12 +649,14 @@ def assemblement(robot_tree, robot_number):
                     skip_cube = node.depth
                     continue
             if node.parent.node_name.__contains__("body_Link_CUBE"):
-                root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
-                input_file_sphereAUX_option +=1
+                keys = list(faceSet_Covered.keys())
+                index = keys.index(cube)
+                root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option[index])
+                input_file_sphereAUX_option[index] +=1
                 while True:
                     if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                        root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option)
-                        input_file_sphereAUX_option +=1
+                        root, direction = treeFunction(input_file_sphereAUX, input_file_sphereAUX_option[index])
+                        input_file_sphereAUX_option[index] +=1
                     else:
                         faceSet_Covered[cube].append(direction.split(".urdf")[0])
                         direction_occupied = direction.split(".urdf")[0]
@@ -761,12 +769,14 @@ def assemblement(robot_tree, robot_number):
 
         elif node.node_name.__contains__("ε") and node.parent.node_name == "0 body_Link_CUBE":
             cube = node.parent.node_name
-            root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option)
-            input_file_sphereAUX_option +=1
+            keys = list(faceSet_Covered.keys())
+            index = keys.index(cube)
+            root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option[index])
+            input_file_sphereAUX_option[index] +=1
             while True:
                 if direction.split(".urdf")[0] in faceSet_Covered.get(cube, []):
-                    root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option)
-                    input_file_sphereAUX_option +=1
+                    root, direction = treeFunction(input_file_sphereAUX,input_file_sphereAUX_option[index])
+                    input_file_sphereAUX_option[index] +=1
                 else:
                     faceSet_Covered[cube].append(direction.split(".urdf")[0])
                     direction_occupied = direction.split(".urdf")[0]
@@ -782,6 +792,8 @@ def assemblement(robot_tree, robot_number):
                 robot_number,
                 node.depth,
             )
+            if collision_found:
+                symmetry_part = ET.Element("robot", name="sim")
             if not node.node_name == "0 ROOT" and not node.node_name == "0 body_Link_CUBE" and not node.node_name.__contains__("ε"):
                 sim_check = True
 
@@ -813,6 +825,8 @@ def assemblement(robot_tree, robot_number):
     output_file = os.path.join(output_folder, output_file)
     shutil.copyfile(committed_path, output_file)
     os.remove(committed_path)
+
+
 
     print(f"Done, robot {robot_number} constructed and ready to train")
     print("--------------------------------------------")

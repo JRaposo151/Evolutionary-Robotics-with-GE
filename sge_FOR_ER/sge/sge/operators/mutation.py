@@ -14,6 +14,7 @@ def mutate(p, pmutation):
         mapped = temp[at_gene]
         for position_to_mutate in range(0, mapped):
             if random.random() < pmutation:
+                p['mutation'] = True
                 current_value = p['genotype'][at_gene][position_to_mutate]
                 choices = []
                 if p['tree_depth'] >= grammar.get_max_depth():
