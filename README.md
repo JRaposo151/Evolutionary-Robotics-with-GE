@@ -6,9 +6,10 @@ This project implements an evolutionary robotics pipeline where **robot morpholo
 The repository contains:
 
 * experiment scripts to evolve and evaluate robots
-* a PyBullet simulation environment (flat plane and Mars terrain)
+* a PyBullet simulation environment (flat terrain and Mars terrain)
 * integration with a grammar-based evolutionary algorithm (SGE3 / DSGE-style workflow)
 * utilities for running and resuming experiments from checkpoints
+* [Demonstration of morphological evolution and robot behaviours](https://youtu.be/kOsOsedzV5s)
 
 ---
 
@@ -31,7 +32,7 @@ At a high level, the pipeline follows this loop:
   * Robots are loaded as URDFs and evaluated in physics simulation.
   * For this project, supports different terrains:
 
-    * **Flat plane**
+    * **Flat terrain**
     * **Mars terrain (mesh-based)**
 
 * **Grammar-based Evolution Algorithm**
@@ -147,7 +148,7 @@ This project uses Mars terrain assets sourced from the `mars_gazebo` repository.
 
 Upstream source: `aunefyren/mars_gazebo` (GitHub). ([GitHub][1])
 
-These assets are used to generate/load a Mars-like surface for simulation, enabling more realistic traction and stability tests compared to a flat plane.
+These assets are used to generate/load a Mars-like surface for simulation, enabling more realistic traction and stability tests compared to a flat terrain.
 
 
 The mars.world file contains absolute file:///... URIs for mars_topografi.dae (e.g., lines around 33 and 40). You must update those <uri> entries to match your local file path.
@@ -194,10 +195,10 @@ This section highlights the main modules and directories you will interact with 
   PyBullet environment that loads the Mars world/terrain and evaluates robots in a Mars-like scenario. Implements a Gym/Gymnasium-style API (reset/step/observation/reward) suitable for Stable-Baselines workflows.
 
 - `sge_FOR_ER/sge/sge/Env_horizontal.py`  
-  PyBullet environment for the default flat/horizontal plane scenario. Also implements the Gym/Gymnasium-style API for Stable-Baselines training/testing.
+  PyBullet environment for the default flat/horizontal terrain scenario. Also implements the Gym/Gymnasium-style API for Stable-Baselines training/testing.
 
 Both environments are responsible for:
-- loading the terrain (Mars mesh or flat plane)
+- loading the terrain (Mars mesh or flat terrain)
 - spawning robot URDFs
 - applying actions to robot joints
 - stepping the simulation
