@@ -4,7 +4,7 @@ import shutil
 import xml.etree.ElementTree as ET
 
 import pybullet_data
-from bigtree import preorder_iter
+from bigtree import preorder_iter, Node
 from pathlib import Path
 import pybullet as p
 
@@ -368,7 +368,7 @@ def collision_test_and_commit(
     return robot, collision_found, skip_until_depth
 
 
-def assemblement(robot_tree, robot_number):
+def assemblement(robot_tree:Node, robot_number):
 
 
     input_file_body = ["body_Link_CUBE.urdf"]
@@ -512,7 +512,8 @@ def assemblement(robot_tree, robot_number):
                 testing_robot,
                 committed_path,
                 robot_number,
-                0,
+                node.depth, 
+                
             )
 
             """ CHECK IF THERE ARE ANY COLISION BETWEEN """
